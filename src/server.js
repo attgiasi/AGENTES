@@ -7,6 +7,7 @@ import { loadSettings, saveSettings, validateSettings } from './settings.js';
 import { runAgent } from './agent.js';
 import { handleSiriCommand } from './siri/commands.js';
 import { getGmailClient, getProfile } from './gmail/auth.js';
+import { executeApprovedAction } from './modules/actions.js';
 
 dotenv.config({ quiet: true });
 
@@ -73,11 +74,29 @@ app.get('/api/approvals', (req, res) => {
   res.json(db.listApprovals(req.query.status || 'pending', Number(req.query.limit || 100)));
 });
 
-app.post('/api/approvals/:id/:status', (req, res) => {
-  const status = ['approved', 'rejected'].includes(req.params.status) ? req.params.status : 'pending';
-  db.updateApproval(req.params.id, status);
-  db.log('info', 'approval', `Aprovação ${req.params.id} atualizada para ${status}.`);
-  res.json({ ok: true, id: req.params.id, status });
+app.post('/api/approvals/:id/:status', async (req, res) => {
+  try {
+    const status = ['approved', 'rejected'].includes(req.params.status) ? req.params.status : 'pending';
+    const approval = db.getApproval(req.params.id);
+    if (!approval) return res.status(404).json({ ok: false, error: 'Aprovação não encontrada.' });
+
+    if (status === 'rejected') {
+      db.updateApproval(req.params.id, 'rejected');
+      db.log('info', 'approval', `Aprovação ${req.params.id} rejeitada.`);
+      return res.json({ ok: true, id: req.params.id, status: 'rejected' });
+    }
+
+    const settings = await loadSettings(db);
+    const gmail = await getGmailClient();
+    const result = await executeApprovedAction({ gmail, approval, settings, db });
+    db.updateApproval(req.params.id, result.status === 'executed' ? 'executed' : 'dry-run');
+    db.log('info', 'approval', `Aprovação ${req.params.id} executada.`, result);
+    return res.json({ ok: true, id: req.params.id, status: result.status, result });
+  } catch (error) {
+    db.updateApproval(req.params.id, 'failed');
+    db.log('error', 'approval', `Falha ao executar aprovação ${req.params.id}.`, { error: error.message });
+    return res.status(500).json({ ok: false, id: req.params.id, error: error.message });
+  }
 });
 
 app.get('/api/apple/reminders', (req, res) => {

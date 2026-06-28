@@ -160,6 +160,11 @@ export class AgentDatabase {
     return rows.map((row) => ({ ...row, payload: JSON.parse(row.payload || '{}') }));
   }
 
+  getApproval(id) {
+    const row = this.db.prepare('SELECT * FROM approvals WHERE id = ?').get(id);
+    return row ? { ...row, payload: JSON.parse(row.payload || '{}') } : null;
+  }
+
   updateApproval(id, status) {
     this.db.prepare('UPDATE approvals SET status = ? WHERE id = ?').run(status, id);
   }
@@ -229,4 +234,3 @@ export class AgentDatabase {
 export async function openDatabase(filePath) {
   return new AgentDatabase(filePath).open();
 }
-

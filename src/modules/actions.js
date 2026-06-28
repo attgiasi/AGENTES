@@ -3,6 +3,7 @@ import {
   archiveMessage,
   createDraft,
   deleteMessage,
+  getMessage,
   getOrCreateLabel,
   labelsByName,
   listLabels,
@@ -37,6 +38,42 @@ export async function executePlan({ gmail, email, plan, settings, db, labelCache
   }
 
   return results;
+}
+
+export async function executeApprovedAction({ gmail, approval, settings, db }) {
+  if (!approval) throw new Error('Aprovação não encontrada.');
+  if (approval.status !== 'pending') throw new Error(`Aprovação não está pendente: ${approval.status}.`);
+
+  const emailId = approval.payload?.emailId;
+  const originalAction = approval.payload?.action;
+  if (!emailId || !originalAction?.name) throw new Error('Aprovação sem email ou ação válida.');
+
+  const email = await getMessage(gmail, emailId);
+  const labels = labelsByName(await listLabels(gmail));
+  const action = {
+    ...originalAction,
+    risk: approval.risk,
+    status: 'ready',
+    reason: 'Aprovado manualmente pelo painel.'
+  };
+  const dryRun = Boolean(settings.agent.dryRun);
+  const result = await executeSingle({ gmail, email, action, settings, db, labels, dryRun });
+  db?.recordAction({
+    emailId,
+    action: action.name,
+    risk: action.risk,
+    status: dryRun ? 'dry-run' : 'executed',
+    requiresConfirmation: true,
+    data: { ...result, approvalId: approval.id }
+  });
+  return {
+    approvalId: approval.id,
+    emailId,
+    action: action.name,
+    status: dryRun ? 'dry-run' : 'executed',
+    detail: result.detail,
+    data: result
+  };
 }
 
 async function executeSingle({ gmail, email, action, db, labels, dryRun }) {
@@ -93,4 +130,3 @@ async function resolveLabel(gmail, labelName, labels, dryRun) {
   labels.set(labelName, label);
   return label;
 }
-

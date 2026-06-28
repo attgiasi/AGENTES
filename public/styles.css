@@ -134,6 +134,18 @@ pre {
   overflow: auto;
 }
 
+.approval-card {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  margin: .75rem 0;
+  padding: 1rem;
+}
+
+.approval-card p {
+  margin: .35rem 0;
+}
+
 footer {
   padding: 2rem;
   text-align: center;
@@ -143,4 +155,3 @@ footer {
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
 }
-

@@ -1,0 +1,19 @@
+{
+  "agent": {
+    "dryRun": false,
+    "maxEmailsPerRun": 100
+  },
+  "modules": {
+    "newsletter": true,
+    "autoArchive": true
+  },
+  "permissions": {
+    "archiveEmails": true,
+    "mediumRiskRequiresConfirmation": false,
+    "deleteEmails": false
+  },
+  "newsletter": {
+    "archiveAfterDays": 1,
+    "deleteAfterDays": 0
+  }
+}

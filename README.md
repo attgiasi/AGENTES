@@ -547,6 +547,18 @@ Depois, com calma:
 - criar eventos;
 - sugerir descadastro.
 
+Para arquivar automaticamente de verdade, confirme três coisas no painel:
+
+1. `Simulação / não alterar Gmail` precisa ficar `Desligado`.
+2. `Arquivamento automático` precisa ficar `Ligado`.
+3. `Arquivar emails` precisa ficar `Ligado`.
+
+Se `Médio risco confirma` estiver `Ligado`, o agente não arquiva sozinho. Ele cria uma aprovação pendente.
+
+Nesse caso, vá em `Logs e aprovações`, clique em `Carregar aprovações` e depois clique em `Aprovar e executar`.
+
+Se você quiser que newsletters e promoções sejam arquivadas sem perguntar, deixe `Médio risco confirma` como `Desligado`.
+
 Evite no começo:
 
 - enviar email automático;
@@ -581,6 +593,7 @@ test
 .env.example
 .gitignore
 agent-settings.example.json
+agent-settings.github.autoarchive.example.json
 package.json
 package-lock.json
 README.md
@@ -632,6 +645,48 @@ Para copiar `token.json`:
 
 ```powershell
 Get-Content -Raw token.json | Set-Clipboard
+```
+
+Importante sobre `AGENT_SETTINGS_JSON`:
+
+O painel local salva configurações no seu computador. O GitHub Actions não enxerga esse painel local.
+
+Então, se você quer que o agente rode no GitHub e arquive automaticamente, o Secret `AGENT_SETTINGS_JSON` também precisa permitir isso.
+
+Exemplo para arquivar newsletters/promoções sem pedir confirmação de risco médio:
+
+```json
+{
+  "agent": {
+    "dryRun": false,
+    "maxEmailsPerRun": 100
+  },
+  "modules": {
+    "newsletter": true,
+    "autoArchive": true
+  },
+  "permissions": {
+    "archiveEmails": true,
+    "mediumRiskRequiresConfirmation": false,
+    "deleteEmails": false
+  },
+  "newsletter": {
+    "archiveAfterDays": 1,
+    "deleteAfterDays": 0
+  }
+}
+```
+
+Eu deixei esse exemplo pronto no arquivo:
+
+```text
+agent-settings.github.autoarchive.example.json
+```
+
+Para copiar e colar no Secret `AGENT_SETTINGS_JSON`, rode:
+
+```powershell
+Get-Content -Raw agent-settings.github.autoarchive.example.json | Set-Clipboard
 ```
 
 ## Rodar no GitHub

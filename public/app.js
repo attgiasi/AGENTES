@@ -88,10 +88,23 @@ async function loadStatus() {
 function bind() {
   document.body.addEventListener('click', async (event) => {
     const toggle = event.target.closest('.toggle[data-path]');
-    if (!toggle) return;
-    const path = toggle.dataset.path;
-    setPath(settings, path, !Boolean(getPath(settings, path)));
-    await saveSettings();
+    const approvalAction = event.target.closest('[data-approval-id][data-approval-status]');
+
+    if (approvalAction) {
+      const id = approvalAction.dataset.approvalId;
+      const status = approvalAction.dataset.approvalStatus;
+      approvalAction.disabled = true;
+      const result = await api(`/api/approvals/${encodeURIComponent(id)}/${status}`, { method: 'POST' });
+      show(result);
+      await loadApprovals();
+      return;
+    }
+
+    if (toggle) {
+      const path = toggle.dataset.path;
+      setPath(settings, path, !Boolean(getPath(settings, path)));
+      await saveSettings();
+    }
   });
 
   document.body.addEventListener('input', (event) => {
@@ -117,7 +130,7 @@ function bind() {
     await loadStatus();
   });
   document.querySelector('#loadLogs').addEventListener('click', async () => show(await api('/api/logs')));
-  document.querySelector('#loadApprovals').addEventListener('click', async () => show(await api('/api/approvals')));
+  document.querySelector('#loadApprovals').addEventListener('click', loadApprovals);
   document.querySelector('#loadNewsletters').addEventListener('click', async () => show(await api('/api/newsletters')));
   document.querySelector('#loadShortcuts').addEventListener('click', async () => {
     document.querySelector('#shortcuts').textContent = JSON.stringify(await api('/api/shortcuts'), null, 2);
@@ -149,6 +162,28 @@ async function api(url, options = {}) {
 
 function show(value) {
   document.querySelector('#output').textContent = JSON.stringify(value, null, 2);
+}
+
+async function loadApprovals() {
+  const approvals = await api('/api/approvals');
+  const output = document.querySelector('#output');
+  if (!approvals.length) {
+    output.innerHTML = '<p>Nenhuma aprovação pendente.</p>';
+    return;
+  }
+  output.innerHTML = approvals.map((approval) => {
+    const subject = approval.payload?.decision?.resumo || approval.payload?.action?.name || approval.action;
+    return `
+      <div class="approval-card">
+        <p><strong>${escapeHtml(approval.action)}</strong> · risco ${escapeHtml(approval.risk)} · ${escapeHtml(approval.created_at)}</p>
+        <p>${escapeHtml(subject)}</p>
+        <div class="hero-actions">
+          <button class="primary" data-approval-id="${escapeHtml(approval.id)}" data-approval-status="approved">Aprovar e executar</button>
+          <button data-approval-id="${escapeHtml(approval.id)}" data-approval-status="rejected">Rejeitar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function getPath(target, path) {
