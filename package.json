@@ -1,0 +1,23 @@
+{
+  "name": "gmail-apple-ia-agent",
+  "version": "1.0.0",
+  "description": "Agente inteligente para Gmail com OpenAI/Gemini, painel web e integração Apple via Siri/Atalhos.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node --no-warnings src/index.js",
+    "server": "node --no-warnings src/server.js",
+    "auth:gmail": "node --no-warnings src/gmail/auth-cli.js",
+    "config:validate": "node --no-warnings scripts/validate-config.js",
+    "check": "node --no-warnings scripts/check-syntax.js && node --no-warnings --test"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "googleapis": "^166.0.0"
+  }
+}
+

@@ -1,0 +1,95 @@
+{
+  "agent": {
+    "enabled": true,
+    "paused": false,
+    "dryRun": true,
+    "timezone": "America/Sao_Paulo",
+    "maxEmailsPerRun": 50,
+    "gmailQuery": "newer_than:30d -in:sent -in:drafts -in:spam -in:trash"
+  },
+  "ai": {
+    "provider": "openai",
+    "compareProviders": false,
+    "openai": {
+      "enabled": true,
+      "model": "gpt-5.4-mini",
+      "includeBody": false
+    },
+    "gemini": {
+      "enabled": false,
+      "model": "gemini-3.5-flash"
+    }
+  },
+  "modules": {
+    "gmailRead": true,
+    "classification": true,
+    "importantDetection": true,
+    "newsletter": true,
+    "autoArchive": false,
+    "drafts": true,
+    "summaries": true,
+    "threads": true,
+    "pendingReplies": true,
+    "deadlines": true,
+    "appleReminders": true,
+    "appleCalendar": true,
+    "attachments": false,
+    "reports": true,
+    "siriShortcuts": true,
+    "logs": true
+  },
+  "permissions": {
+    "lowRiskAutomatic": true,
+    "mediumRiskRequiresConfirmation": true,
+    "highRiskRequiresExplicitConfirmation": true,
+    "readEmails": true,
+    "classifyEmails": true,
+    "summarizeEmails": true,
+    "applyLabels": true,
+    "markRead": false,
+    "markUnread": false,
+    "createReminders": true,
+    "createReports": true,
+    "archiveEmails": false,
+    "moveEmails": false,
+    "createDrafts": true,
+    "createCalendarEvents": false,
+    "downloadAttachments": false,
+    "unsubscribeNewsletter": false,
+    "sendEmails": false,
+    "deleteEmails": false,
+    "emptyTrash": false,
+    "forwardEmails": false,
+    "bulkActions": false
+  },
+  "newsletter": {
+    "enabled": true,
+    "archiveAfterDays": 5,
+    "deleteAfterDays": 0,
+    "keepFavoritesInInbox": true,
+    "suggestUnsubscribe": true,
+    "requireConfirmationForUnsubscribe": true,
+    "trustedSenders": [],
+    "blockedSenders": [],
+    "favoriteSenders": []
+  },
+  "apple": {
+    "enabled": true,
+    "integrationType": "shortcuts",
+    "reminders": {
+      "enabled": true,
+      "listName": "Pendências do Gmail",
+      "requireConfirmation": false
+    },
+    "calendar": {
+      "enabled": true,
+      "defaultCalendarName": "Calendário",
+      "defaultAlertMinutes": 30,
+      "requireConfirmation": true
+    }
+  },
+  "siri": {
+    "enabled": true,
+    "requireToken": true
+  }
+}
