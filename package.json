@@ -11,6 +11,7 @@
     "start": "node --no-warnings src/index.js",
     "server": "node --no-warnings src/server.js",
     "auth:gmail": "node --no-warnings src/gmail/auth-cli.js",
+    "settings:export": "node --no-warnings scripts/export-settings.js",
     "config:validate": "node --no-warnings scripts/validate-config.js",
     "check": "node --no-warnings scripts/check-syntax.js && node --no-warnings --test"
   },
@@ -20,4 +21,3 @@
     "googleapis": "^166.0.0"
   }
 }
-

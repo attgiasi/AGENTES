@@ -706,6 +706,16 @@ Para copiar e colar no Secret `AGENT_SETTINGS_JSON`, rode:
 Get-Content -Raw agent-settings.github.autoarchive.example.json | Set-Clipboard
 ```
 
+Se você quer copiar a configuração atual do painel local, rode:
+
+```powershell
+npm.cmd run --silent settings:export | Set-Clipboard
+```
+
+Depois cole no Secret `AGENT_SETTINGS_JSON`.
+
+Essa exportação não inclui suas credenciais do Google nem chaves de IA. Ela copia apenas as configurações do agente.
+
 ## Rodar no GitHub
 
 1. Vá em `Actions`.
