@@ -27,20 +27,6 @@
           <button id="refreshDashboard">Atualizar dashboard</button>
         </div>
         <div id="dashboardMetrics" class="metric-grid"></div>
-        <div class="dashboard-columns">
-          <div>
-            <h3>Ações recentes</h3>
-            <div id="recentActions" class="mini-list"></div>
-          </div>
-          <div>
-            <h3>Aprovações e sugestões</h3>
-            <div id="pendingApprovalsDashboard" class="mini-list"></div>
-          </div>
-          <div>
-            <h3>Logs recentes</h3>
-            <div id="recentLogs" class="mini-list"></div>
-          </div>
-        </div>
       </section>
 
       <section class="card">
@@ -54,34 +40,36 @@
         </div>
       </section>
 
+      <section class="card">
+        <h2>2. IA principal</h2>
+        <div class="form-grid one-column">
+          <label>Provedor principal
+            <select data-path="ai.provider">
+              <option value="openai">OpenAI principal</option>
+              <option value="gemini">Gemini principal</option>
+              <option value="fallback">OpenAI com fallback Gemini</option>
+            </select>
+          </label>
+          <label>Modelo OpenAI
+            <input data-path="ai.openai.model">
+          </label>
+          <label>Modelo Gemini
+            <input data-path="ai.gemini.model">
+          </label>
+        </div>
+        <div id="aiSwitches" class="switch-grid compact"></div>
+      </section>
+
       <section class="card wide">
-        <h2>2. Nível de autonomia</h2>
+        <h2>3. Nível de autonomia</h2>
         <p class="hint">Escolha por cartões. O nível define até onde o agente pode ir; as chaves de permissões continuam mandando no que ele realmente executa.</p>
         <div id="autonomyGrid" class="choice-grid"></div>
       </section>
 
       <section class="card wide">
-        <h2>3. Tipo de execução rápida</h2>
+        <h2>4. Tipo de execução rápida</h2>
         <p class="hint">Estes cartões apenas ligam/desligam chaves para um objetivo. Não existe “modo” preso: depois você pode mudar qualquer chave manualmente.</p>
         <div id="executionPresetGrid" class="choice-grid"></div>
-      </section>
-
-      <section class="card">
-        <h2>4. IA principal</h2>
-        <label>Provedor principal
-          <select data-path="ai.provider">
-            <option value="openai">OpenAI principal</option>
-            <option value="gemini">Gemini principal</option>
-            <option value="fallback">OpenAI com fallback Gemini</option>
-          </select>
-        </label>
-        <label>Modelo OpenAI
-          <input data-path="ai.openai.model">
-        </label>
-        <label>Modelo Gemini
-          <input data-path="ai.gemini.model">
-        </label>
-        <div id="aiSwitches" class="switch-grid"></div>
       </section>
 
       <section class="card wide">

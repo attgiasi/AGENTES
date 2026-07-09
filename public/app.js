@@ -334,43 +334,28 @@ async function loadStatus() {
 async function loadDashboard() {
   const dashboard = await api('/api/dashboard');
   const metrics = [
-    ['Arquivados', dashboard.emailActions.archived, 'E-mails removidos da entrada sem apagar.'],
-    ['Apagados', dashboard.emailActions.deleted + dashboard.emailActions.hardDeleted, 'Movidos para lixeira ou excluídos.'],
-    ['Descadastros', dashboard.emailActions.unsubscribed, 'Newsletters com descadastro executado.'],
-    ['Sugestões', dashboard.totals.suggestions, 'Simulações, bloqueios e aprovações pendentes.'],
-    ['Etiquetas', dashboard.emailActions.labeled, 'Labels aplicadas pelo agente.'],
-    ['Rascunhos', dashboard.emailActions.drafts, 'Respostas preparadas sem enviar.'],
-    ['Lembretes', dashboard.emailActions.reminders, 'Pendências criadas para Apple Reminders.'],
-    ['Eventos', dashboard.emailActions.calendarEvents, 'Eventos preparados para calendário.'],
-    ['Newsletters', dashboard.newsletters.senders, `${dashboard.newsletters.messages} mensagens recorrentes.`],
-    ['Falhas', dashboard.totals.failed, 'Erros registrados em ações.']
+    { title: 'Arquivados', value: dashboard.emailActions.archived, description: 'E-mails removidos da entrada sem apagar.' },
+    { title: 'Apagados', value: dashboard.emailActions.deleted + dashboard.emailActions.hardDeleted, description: 'Movidos para lixeira ou excluídos.' },
+    { title: 'Descadastros', value: dashboard.emailActions.unsubscribed, description: 'Newsletters com descadastro executado.' },
+    { title: 'Sugestões', value: dashboard.totals.suggestions, description: 'Clique para ver por blocos didáticos.', href: './suggestions.html' },
+    { title: 'Etiquetas', value: dashboard.emailActions.labeled, description: 'Labels aplicadas pelo agente.' },
+    { title: 'Rascunhos', value: dashboard.emailActions.drafts, description: 'Respostas preparadas sem enviar.' },
+    { title: 'Lembretes', value: dashboard.emailActions.reminders, description: 'Pendências criadas para Apple Reminders.' },
+    { title: 'Eventos', value: dashboard.emailActions.calendarEvents, description: 'Eventos preparados para calendário.' },
+    { title: 'Newsletters', value: dashboard.newsletters.senders, description: `${dashboard.newsletters.messages} mensagens recorrentes.` },
+    { title: 'Falhas', value: dashboard.totals.failed, description: 'Erros registrados em ações.' }
   ];
 
-  document.querySelector('#dashboardMetrics').innerHTML = metrics.map(([title, value, description]) => `
-    <article class="metric-card">
-      <strong>${escapeHtml(value)}</strong>
-      <span>${escapeHtml(title)}</span>
-      <small>${escapeHtml(description)}</small>
-    </article>
-  `).join('');
-
-  renderMiniList('#recentActions', dashboard.recentActions, (item) => `
-    <strong>${escapeHtml(actionLabel(item.action))}</strong>
-    <span>${escapeHtml(statusLabel(item.status))} · ${escapeHtml(item.created_at)}</span>
-    <small>${escapeHtml(item.data?.detail || item.data?.reason || item.email_id || '')}</small>
-  `, 'Nenhuma ação registrada ainda.');
-
-  renderMiniList('#pendingApprovalsDashboard', dashboard.pendingApprovals, (item) => `
-    <strong>${escapeHtml(actionLabel(item.action))}</strong>
-    <span>Risco ${escapeHtml(item.risk)} · ${escapeHtml(item.created_at)}</span>
-    <small>${escapeHtml(item.payload?.decision?.resumo || item.payload?.action?.name || 'Aguardando sua decisão.')}</small>
-  `, 'Nenhuma aprovação pendente.');
-
-  renderMiniList('#recentLogs', dashboard.recentLogs, (item) => `
-    <strong>${escapeHtml(item.module)} · ${escapeHtml(item.level)}</strong>
-    <span>${escapeHtml(item.created_at)}</span>
-    <small>${escapeHtml(item.message)}</small>
-  `, 'Nenhum log recente.');
+  document.querySelector('#dashboardMetrics').innerHTML = metrics.map((item) => {
+    const content = `
+      <strong>${escapeHtml(item.value)}</strong>
+      <span>${escapeHtml(item.title)}</span>
+      <small>${escapeHtml(item.description)}</small>
+    `;
+    return item.href
+      ? `<a class="metric-card metric-link" href="${escapeHtml(item.href)}">${content}</a>`
+      : `<article class="metric-card">${content}</article>`;
+  }).join('');
 }
 
 function bind() {

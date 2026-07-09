@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sugestões da IA - Gmail Apple IA Agent</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Sugestões da IA</p>
+      <h1>O que o agente está sugerindo</h1>
+      <p>Veja por blocos o que a IA sugeriu apagar, arquivar, enviar, descadastrar ou organizar. Esta página é explicativa: as aprovações continuam no painel principal.</p>
+      <div class="hero-actions">
+        <a class="button-link" href="./">Voltar ao painel</a>
+        <button id="refreshSuggestions" class="primary">Atualizar sugestões</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card wide">
+        <h2>Resumo das sugestões</h2>
+        <div id="suggestionMetrics" class="metric-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>Blocos didáticos</h2>
+        <p class="hint">Cada bloco explica a ação sugerida, o motivo provável e se ela veio de simulação, bloqueio ou aprovação pendente.</p>
+        <div id="suggestionGroups" class="suggestion-groups"></div>
+      </section>
+    </main>
+
+    <script src="./suggestions.js"></script>
+  </body>
+</html>

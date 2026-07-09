@@ -49,6 +49,10 @@ app.get('/api/dashboard', (req, res) => {
   res.json(db.dashboardSummary());
 });
 
+app.get('/api/suggestions', (req, res) => {
+  res.json(db.suggestionsSummary());
+});
+
 app.put('/api/settings', async (req, res) => {
   const settings = await loadSettings(db);
   const next = { ...settings, ...req.body };

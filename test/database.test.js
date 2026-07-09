@@ -32,3 +32,16 @@ test('dashboard resume ações e sugestões', async () => {
   assert.equal(summary.newsletters.senders, 1);
   assert.equal(summary.pendingApprovals.length, 1);
 });
+
+test('sugestões são agrupadas por tipo de ação', async () => {
+  const db = await openDatabase(':memory:');
+  db.recordAction({ emailId: '1', action: 'archiveEmail', risk: 'medio', status: 'dry-run', data: { detail: 'Arquivar newsletter antiga' } });
+  db.recordAction({ emailId: '2', action: 'deleteEmail', risk: 'alto', status: 'blocked', data: { reason: 'Exclusão desligada' } });
+  db.createApproval({ action: 'sendEmail', risk: 'alto', payload: { emailId: '3', action: { name: 'sendEmail' }, decision: { resumo: 'Responder cliente' } } });
+
+  const suggestions = db.suggestionsSummary();
+  assert.equal(suggestions.groups.archive.count, 1);
+  assert.equal(suggestions.groups.delete.count, 1);
+  assert.equal(suggestions.groups.send.count, 1);
+  assert.equal(suggestions.totals.suggestions, 3);
+});

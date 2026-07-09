@@ -38,7 +38,8 @@ body {
 
 button, input, select, textarea { font: inherit; }
 
-button {
+button,
+.button-link {
   border: 1px solid var(--border);
   background: white;
   color: var(--text);
@@ -46,9 +47,14 @@ button {
   padding: .7rem 1rem;
   cursor: pointer;
   font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-button.primary {
+button.primary,
+.button-link.primary {
   background: #21c065;
   color: #071b0d;
   border-color: transparent;
@@ -123,6 +129,10 @@ input, select, textarea {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: .75rem 1rem;
   margin: .4rem 0;
+}
+
+.form-grid.one-column {
+  grid-template-columns: 1fr;
 }
 
 .choice-grid {
@@ -217,6 +227,17 @@ input, select, textarea {
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: #ffffff;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.metric-link {
+  border-color: #60a5fa;
+  background: #eff6ff;
+}
+
+.metric-link:hover {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
 }
 
 .metric-card strong {
@@ -260,6 +281,52 @@ input, select, textarea {
 .empty {
   color: var(--muted);
   font-size: .9rem;
+}
+
+.suggestion-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.suggestion-group {
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  padding: .9rem;
+  background: #ffffff;
+}
+
+.suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: .75rem;
+  align-items: stretch;
+}
+
+.suggestion-card {
+  display: grid;
+  gap: .55rem;
+  min-height: 240px;
+  height: 100%;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+
+.suggestion-card h4,
+.suggestion-card p {
+  margin: 0;
+}
+
+.suggestion-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.suggestion-card small {
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .toggle-card.is-on {

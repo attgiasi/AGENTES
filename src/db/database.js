@@ -207,6 +207,66 @@ export class AgentDatabase {
     };
   }
 
+  suggestionsSummary() {
+    const pendingApprovals = this.listApprovals('pending', 5000);
+    const suggestedActions = this.listActions(5000)
+      .filter((action) => ['dry-run', 'blocked'].includes(action.status));
+    const groups = {
+      delete: suggestionGroup('Apagar', 'E-mails que a IA sugeriu apagar ou mover para a lixeira.'),
+      archive: suggestionGroup('Arquivar', 'E-mails que a IA sugeriu tirar da caixa de entrada sem apagar.'),
+      send: suggestionGroup('Enviar mensagem', 'Mensagens que a IA sugeriu enviar ou preparar como resposta.'),
+      unsubscribe: suggestionGroup('Descadastrar', 'Newsletters ou mailings que a IA sugeriu cancelar.'),
+      organize: suggestionGroup('Organizar', 'Etiquetas, marcações, lembretes e outras organizações sugeridas.'),
+      other: suggestionGroup('Outras sugestões', 'Sugestões que não entraram nos grupos principais.')
+    };
+
+    for (const approval of pendingApprovals) {
+      addSuggestion(groups, approval.payload?.action?.name || approval.action, {
+        id: approval.id,
+        source: 'approval',
+        status: approval.status,
+        risk: approval.risk,
+        action: approval.payload?.action?.name || approval.action,
+        createdAt: approval.created_at,
+        emailId: approval.payload?.emailId,
+        title: actionTitle(approval.payload?.action?.name || approval.action),
+        summary: approval.payload?.decision?.resumo || approval.payload?.decision?.motivo || 'Aguardando aprovação no painel.',
+        reason: approval.payload?.protectedSender ? 'Remetente protegido exige sua decisão.' : 'A IA sugeriu esta ação e aguarda sua aprovação.'
+      });
+    }
+
+    for (const action of suggestedActions) {
+      addSuggestion(groups, action.action, {
+        id: action.id,
+        source: action.status === 'dry-run' ? 'simulation' : 'blocked',
+        status: action.status,
+        risk: action.risk,
+        action: action.action,
+        createdAt: action.created_at,
+        emailId: action.email_id,
+        title: actionTitle(action.action),
+        summary: action.data?.detail || action.data?.reason || 'Sugestão registrada pelo agente.',
+        reason: action.status === 'dry-run'
+          ? 'Simulação: o agente mostrou o que faria, mas não executou.'
+          : 'Bloqueado por configuração, limite ou proteção.'
+      });
+    }
+
+    return {
+      updatedAt: nowIso(),
+      groups: Object.fromEntries(Object.entries(groups).map(([key, group]) => [
+        key,
+        { ...group, count: group.items.length }
+      ])),
+      totals: {
+        suggestions: Object.values(groups).reduce((sum, group) => sum + group.items.length, 0),
+        approvals: pendingApprovals.length,
+        simulations: suggestedActions.filter((action) => action.status === 'dry-run').length,
+        blocked: suggestedActions.filter((action) => action.status === 'blocked').length
+      }
+    };
+  }
+
   createApproval({ action, risk, payload }) {
     const row = {
       id: stableId('approval'),
@@ -313,4 +373,50 @@ function rowsToObject(rows, field) {
     output[key] = (output[key] || 0) + Number(row.total || 0);
     return output;
   }, {});
+}
+
+function suggestionGroup(title, description) {
+  return { title, description, count: 0, items: [] };
+}
+
+function addSuggestion(groups, actionName, item) {
+  groups[groupForAction(actionName)].items.push(item);
+}
+
+function groupForAction(actionName) {
+  if (['deleteEmail', 'hardDeleteEmail', 'emptyTrash'].includes(actionName)) return 'delete';
+  if (actionName === 'archiveEmail') return 'archive';
+  if (['sendEmail', 'createDraft', 'forwardEmail'].includes(actionName)) return 'send';
+  if (actionName === 'unsubscribeNewsletter') return 'unsubscribe';
+  if ([
+    'applyLabel',
+    'identifyNewsletter',
+    'markRead',
+    'markUnread',
+    'createReminder',
+    'createCalendarEvent',
+    'moveEmail'
+  ].includes(actionName)) return 'organize';
+  return 'other';
+}
+
+function actionTitle(actionName) {
+  const labels = {
+    archiveEmail: 'Arquivar e-mail',
+    deleteEmail: 'Mover para lixeira',
+    hardDeleteEmail: 'Apagar definitivamente',
+    emptyTrash: 'Esvaziar lixeira',
+    unsubscribeNewsletter: 'Cancelar newsletter',
+    sendEmail: 'Enviar mensagem',
+    createDraft: 'Criar rascunho',
+    forwardEmail: 'Encaminhar e-mail',
+    applyLabel: 'Aplicar etiqueta',
+    identifyNewsletter: 'Identificar newsletter',
+    markRead: 'Marcar como lido',
+    markUnread: 'Marcar como não lido',
+    createReminder: 'Criar lembrete',
+    createCalendarEvent: 'Criar evento',
+    moveEmail: 'Mover e-mail'
+  };
+  return labels[actionName] || actionName || 'Sugestão';
 }
