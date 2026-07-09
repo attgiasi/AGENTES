@@ -64,11 +64,48 @@ export async function getGmailClient() {
 }
 
 export async function getProfile(gmail) {
-  const response = await gmail.users.getProfile({ userId: 'me' });
-  return response.data;
+  try {
+    const response = await gmail.users.getProfile({ userId: 'me' });
+    return response.data;
+  } catch (error) {
+    throw explainGoogleAuthError(error);
+  }
 }
 
 export function tokenHasScope(token, scope) {
   const value = String(token?.scope || '');
   return value.split(/\s+/).includes(scope);
+}
+
+export function explainGoogleAuthError(error) {
+  const message = [
+    error?.message,
+    error?.response?.data?.error,
+    error?.response?.data?.error_description
+  ].filter(Boolean).join(' ');
+
+  if (/invalid_grant/i.test(message)) {
+    return new Error([
+      'Token do Gmail inválido ou expirado (invalid_grant).',
+      'Isso normalmente acontece quando o acesso foi revogado, o token ficou velho ou o GOOGLE_TOKEN_JSON não combina com o credentials.json.',
+      'Correção local: rode npm.cmd run auth:gmail, autorize novamente e gere um novo token.json.',
+      'Correção no GitHub: copie o novo token.json inteiro e atualize o Secret GOOGLE_TOKEN_JSON.'
+    ].join(' '));
+  }
+
+  if (/invalid_client/i.test(message)) {
+    return new Error([
+      'Credencial OAuth do Google inválida (invalid_client).',
+      'Confira se o credentials.json ou o Secret GOOGLE_CREDENTIALS_JSON pertence ao mesmo app OAuth usado para gerar o token.'
+    ].join(' '));
+  }
+
+  if (/insufficient|permission|scope/i.test(message)) {
+    return new Error([
+      'Permissão Gmail insuficiente.',
+      'Rode npm.cmd run auth:gmail novamente para autorizar os escopos necessários.'
+    ].join(' '));
+  }
+
+  return error;
 }

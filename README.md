@@ -587,6 +587,7 @@ Suba:
 ```text
 .github
 docs
+pages
 public
 scripts
 src
@@ -723,6 +724,38 @@ Essa exportação não inclui suas credenciais do Google nem chaves de IA. Ela c
 3. Clique em `Run workflow`.
 4. Aguarde.
 5. Se der erro de Secret faltando, volte nos Secrets.
+
+---
+
+# Configurador online no GitHub Pages
+
+Também existe uma página estática para montar/copiar o `AGENT_SETTINGS_JSON` sem rodar backend:
+
+```text
+https://attgiasi.github.io/AGENTES/
+```
+
+Essa página serve para configurar botões e copiar o JSON para o GitHub Secret.
+
+Ela não conecta Gmail, não acessa OpenAI, não salva token e não executa o agente. Ela apenas ajuda a montar a configuração.
+
+## Como publicar o configurador no Pages
+
+Depois de subir os arquivos atualizados no GitHub:
+
+1. Abra o repositório `AGENTES`.
+2. Vá em `Settings`.
+3. Clique em `Pages`.
+4. Em `Build and deployment`, escolha `GitHub Actions`.
+5. Vá em `Actions`.
+6. Rode o workflow `Publicar configurador no GitHub Pages`.
+7. Ao terminar, abra:
+
+```text
+https://attgiasi.github.io/AGENTES/
+```
+
+Se aparecer 404, aguarde 1 ou 2 minutos e atualize a página.
 
 ---
 
@@ -871,10 +904,47 @@ Use sempre PowerShell com `npm.cmd`:
 npm.cmd install
 npm.cmd run check
 npm.cmd run auth:gmail
+npm.cmd run gmail:check
 npm.cmd run server
 npm.cmd run start
 npm.cmd run config:validate
 ```
+
+## Se aparecer `invalid_grant`
+
+Esse erro significa que o token do Gmail ficou inválido, expirou, foi revogado ou não combina mais com a credencial OAuth.
+
+Para testar:
+
+```powershell
+npm.cmd run gmail:check
+```
+
+Se aparecer erro de token inválido, faça assim:
+
+1. No PowerShell, dentro da pasta do projeto, rode:
+
+   ```powershell
+   npm.cmd run auth:gmail
+   ```
+
+2. Autorize novamente no navegador.
+3. Quando aparecer que foi autorizado, copie o novo `token.json`:
+
+   ```powershell
+   Get-Content -Raw token.json | Set-Clipboard
+   ```
+
+4. No GitHub, vá em:
+
+   `Settings` → `Secrets and variables` → `Actions`
+
+5. Abra o Secret `GOOGLE_TOKEN_JSON`.
+6. Cole o novo conteúdo.
+7. Salve.
+8. Rode o workflow de novo.
+
+Esse passo é obrigatório quando o Google invalida o refresh token.
 
 ## Se algo der errado
 

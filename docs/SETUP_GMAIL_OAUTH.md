@@ -30,7 +30,25 @@ Quando terminar, será criado o arquivo:
 token.json
 ```
 
-## 3. O que nunca subir no GitHub
+## 3. Testar se o token ainda está válido
+
+Rode:
+
+```powershell
+npm.cmd run gmail:check
+```
+
+Se aparecer `Gmail conectado com sucesso`, está tudo certo.
+
+Se aparecer `invalid_grant`, gere um novo token com:
+
+```powershell
+npm.cmd run auth:gmail
+```
+
+Depois atualize o Secret `GOOGLE_TOKEN_JSON` no GitHub com o novo conteúdo do `token.json`.
+
+## 4. O que nunca subir no GitHub
 
 Nunca suba:
 

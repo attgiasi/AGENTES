@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Configurador online - Gmail Apple IA Agent</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">GitHub Pages</p>
+      <h1>Configurador online do agente Gmail</h1>
+      <p>Monte a configuração do agente sem colocar senhas, tokens ou credenciais nesta página. No final, copie o JSON para o Secret <code>AGENT_SETTINGS_JSON</code>.</p>
+      <div class="actions">
+        <button id="safePreset">Usar configuração segura</button>
+        <button id="autoArchivePreset" class="primary">Usar autoarquivamento</button>
+        <button id="copyJson">Copiar JSON</button>
+        <button id="downloadJson">Baixar JSON</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>1. Segurança geral</h2>
+        <label>Nível de autonomia
+          <select data-path="agent.autonomyLevel">
+            <option value="0">0 - Desligado</option>
+            <option value="1">1 - Apenas análise</option>
+            <option value="2">2 - Simulação</option>
+            <option value="3">3 - Baixo risco automático</option>
+            <option value="4">4 - Médio risco com confirmação</option>
+            <option value="5">5 - Automático controlado</option>
+            <option value="6">6 - Alto risco só com aprovação</option>
+            <option value="7">7 - Máximo configurado</option>
+          </select>
+        </label>
+        <div class="switches">
+          <button class="toggle" data-path="agent.enabled">Agente ativo</button>
+          <button class="toggle" data-path="agent.paused">Pausado</button>
+          <button class="toggle" data-path="agent.dryRun">Simulação / não alterar Gmail</button>
+          <button class="toggle danger-toggle" data-path="agent.emergencyStop">Parada de emergência</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2. Gmail e execução</h2>
+        <label>Máximo de e-mails por execução
+          <input type="number" min="1" max="100" data-path="agent.maxEmailsPerRun">
+        </label>
+        <label>Busca Gmail
+          <input data-path="agent.gmailQuery">
+        </label>
+        <label>Rodar a cada X horas
+          <input type="number" min="1" max="24" data-path="automation.intervalHours">
+        </label>
+        <label>Horas permitidas, 0 a 23
+          <input data-path="automation.allowedHours" data-kind="csv">
+        </label>
+        <div class="switches">
+          <button class="toggle" data-path="automation.enabled">Automação agendada</button>
+          <button class="toggle" data-path="automation.manualOnly">Somente manual</button>
+          <button class="toggle" data-path="automation.weekdaysOnly">Só dias úteis</button>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <h2>3. Módulos</h2>
+        <div id="moduleButtons" class="switches"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>4. Permissões</h2>
+        <p>A recomendação inicial é manter envio e exclusão desligados. Arquivar é bem mais seguro do que apagar.</p>
+        <div id="permissionButtons" class="switches"></div>
+      </section>
+
+      <section class="card">
+        <h2>5. Newsletter e limpeza</h2>
+        <label>Arquivar newsletters após X dias
+          <input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays">
+        </label>
+        <label>Apagar após X dias, 0 desliga
+          <input type="number" min="0" max="3650" data-path="newsletter.deleteAfterDays">
+        </label>
+        <label>Favoritos que ficam na entrada
+          <input data-path="newsletter.favoriteSenders" data-kind="csv" placeholder="email@exemplo.com">
+        </label>
+        <div class="switches">
+          <button class="toggle" data-path="newsletter.enabled">Newsletter ligado</button>
+          <button class="toggle" data-path="newsletter.keepFavoritesInInbox">Manter favoritos</button>
+          <button class="toggle" data-path="newsletter.suggestUnsubscribe">Sugerir descadastro</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>6. Remetentes protegidos</h2>
+        <p>Bancos, governo, saúde e pessoas importantes devem ficar protegidos.</p>
+        <label>E-mails protegidos
+          <input data-path="protectedSenders.emails" data-kind="csv">
+        </label>
+        <label>Domínios protegidos
+          <input data-path="protectedSenders.domains" data-kind="csv" placeholder="empresa.com, gov.br">
+        </label>
+        <label>Palavras protegidas
+          <input data-path="protectedSenders.keywords" data-kind="csv">
+        </label>
+        <div class="switches">
+          <button class="toggle" data-path="protectedSenders.enabled">Proteção ligada</button>
+          <button class="toggle" data-path="protectedSenders.requireConfirmationForArchive">Confirmar arquivar protegidos</button>
+          <button class="toggle" data-path="protectedSenders.requireConfirmationForDelete">Confirmar apagar protegidos</button>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <h2>7. Resultado para colar no GitHub</h2>
+        <p>Cole este conteúdo em <strong>Settings → Secrets and variables → Actions → AGENT_SETTINGS_JSON</strong>.</p>
+        <textarea id="jsonOutput" spellcheck="false"></textarea>
+      </section>
+    </main>
+
+    <footer>
+      <p>Esta página não salva nem pede suas chaves. Credenciais continuam somente em Secrets do GitHub.</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
