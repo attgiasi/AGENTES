@@ -1,0 +1,26 @@
+node_modules/
+npm-debug.log*
+
+# Segredos locais. Nunca subir para GitHub.
+.env
+.env.*
+credentials.json
+token.json
+agent-settings.json
+
+# Banco e logs locais.
+data/*.sqlite
+data/*.sqlite-*
+logs/*.json
+logs/*.md
+
+# Artefatos
+*.zip
+reports/
+gmail-apple-ia-agent/
+
+# Sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Configurador online - Gmail Apple IA Agent</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">GitHub Pages</p>
+      <h1>Configurador online do agente Gmail</h1>
+      <p>Monte o JSON de configuração sem colocar senha, token, credencial ou chave de API nesta página. Depois cole em <code>AGENT_SETTINGS_JSON</code>.</p>
+      <div class="actions">
+        <button id="safePreset">Configuração segura</button>
+        <button id="copyJson" class="primary">Copiar JSON</button>
+        <button id="downloadJson">Baixar JSON</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card wide">
+        <h2>1. Nível de autonomia</h2>
+        <p class="hint">Escolha por cartões. O nível define até onde o agente pode ir; as permissões abaixo continuam mandando no que ele realmente executa.</p>
+        <div id="autonomyGrid" class="choice-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>2. Tipo de execução rápida</h2>
+        <p class="hint">Estes cartões só ajustam chaves. Você continua livre para ligar/desligar cada função manualmente.</p>
+        <div id="executionPresetGrid" class="choice-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>3. Gmail e execução</h2>
+        <p class="hint">Escolha quais caixas do Gmail serão lidas, quantos e-mails entram por execução e em quais horas o agente pode rodar.</p>
+        <div class="form-grid">
+          <label>Máximo de e-mails por execução
+            <input type="number" min="1" max="1000" data-path="agent.maxEmailsPerRun">
+          </label>
+          <label>Buscar e-mails dos últimos X dias
+            <input type="number" min="1" max="3650" data-path="gmail.newerThanDays">
+          </label>
+          <label>Rodar de quantas em quantas horas
+            <input type="number" min="1" max="24" data-path="automation.intervalHours">
+          </label>
+          <label>Busca extra avançada, opcional
+            <input data-path="agent.gmailQuery" placeholder="exemplo: subject:boleto">
+          </label>
+        </div>
+        <h3>Caixas/categorias do Gmail</h3>
+        <div id="gmailCategorySwitches" class="switch-grid compact"></div>
+        <h3>Filtros de leitura</h3>
+        <div id="gmailSwitches" class="switch-grid compact"></div>
+        <h3>Horários permitidos</h3>
+        <div class="actions">
+          <button data-hours-preset="all">Todas as horas</button>
+          <button data-hours-preset="business">Horário comercial</button>
+          <button data-hours-preset="quiet">Manhã e noite</button>
+        </div>
+        <div id="hourGrid" class="hour-grid"></div>
+        <div id="automationSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>4. Módulos</h2>
+        <p class="hint">Módulos dizem o que o agente pode analisar. Permissões dizem o que ele pode alterar.</p>
+        <div id="moduleButtons" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>5. Permissões</h2>
+        <p class="hint">Para arquivar automaticamente: ligue “Arquivamento”, “Arquivar e-mails”, autonomia 5 ou maior, simulação desligada e “Confirmar risco médio” desligado.</p>
+        <div id="permissionButtons" class="switch-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>6. Newsletter e limpeza</h2>
+        <label>Arquivar newsletters após X dias
+          <input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays">
+        </label>
+        <label>Apagar após X dias, 0 desliga
+          <input type="number" min="0" max="3650" data-path="newsletter.deleteAfterDays">
+        </label>
+        <label>Favoritos que ficam na entrada
+          <input data-path="newsletter.favoriteSenders" data-kind="csv" placeholder="email@exemplo.com">
+        </label>
+        <div id="newsletterSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>7. Remetentes protegidos</h2>
+        <p class="hint">Proteja bancos, governo, saúde e pessoas importantes.</p>
+        <label>E-mails protegidos
+          <input data-path="protectedSenders.emails" data-kind="csv">
+        </label>
+        <label>Domínios protegidos
+          <input data-path="protectedSenders.domains" data-kind="csv" placeholder="empresa.com, gov.br">
+        </label>
+        <label>Palavras protegidas
+          <input data-path="protectedSenders.keywords" data-kind="csv">
+        </label>
+        <div id="protectedSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>8. Resultado para colar no GitHub</h2>
+        <p>Cole este conteúdo em <strong>Settings → Secrets and variables → Actions → AGENT_SETTINGS_JSON</strong>.</p>
+        <textarea id="jsonOutput" spellcheck="false"></textarea>
+      </section>
+    </main>
+
+    <footer>
+      <p>Esta página não salva nem pede suas chaves. Credenciais ficam somente nos Secrets do GitHub.</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

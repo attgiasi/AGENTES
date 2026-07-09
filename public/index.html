@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gmail Apple IA Agent</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Gmail + Apple + IA</p>
+      <h1>Painel de controle do agente</h1>
+      <p>Controle o que o agente pode fazer. Cada chave explica sua função e salva automaticamente.</p>
+      <div class="hero-actions">
+        <button id="refresh">Atualizar status</button>
+        <button id="runNow" class="primary">Rodar agora</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card wide dashboard-card">
+        <div class="section-title">
+          <div>
+            <h2>Dashboard geral</h2>
+            <p class="hint">Visão rápida do que o agente já fez ou sugeriu: arquivados, apagados, descadastros, rascunhos, pendências e newsletters.</p>
+          </div>
+          <button id="refreshDashboard">Atualizar dashboard</button>
+        </div>
+        <div id="dashboardMetrics" class="metric-grid"></div>
+        <div class="dashboard-columns">
+          <div>
+            <h3>Ações recentes</h3>
+            <div id="recentActions" class="mini-list"></div>
+          </div>
+          <div>
+            <h3>Aprovações e sugestões</h3>
+            <div id="pendingApprovalsDashboard" class="mini-list"></div>
+          </div>
+          <div>
+            <h3>Logs recentes</h3>
+            <div id="recentLogs" class="mini-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>1. Visão geral</h2>
+        <div id="status" class="status-list"></div>
+        <p class="hint">Sem modos fixos: o agente obedece apenas às chaves, permissões, riscos, limites e horários configurados aqui.</p>
+        <div id="coreSwitches" class="switch-grid"></div>
+        <div class="hero-actions">
+          <button id="emergencyStop" class="danger-button">Parada de emergência</button>
+          <button id="resumeSafe">Reativar seguro em simulação</button>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <h2>2. Nível de autonomia</h2>
+        <p class="hint">Escolha por cartões. O nível define até onde o agente pode ir; as chaves de permissões continuam mandando no que ele realmente executa.</p>
+        <div id="autonomyGrid" class="choice-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>3. Tipo de execução rápida</h2>
+        <p class="hint">Estes cartões apenas ligam/desligam chaves para um objetivo. Não existe “modo” preso: depois você pode mudar qualquer chave manualmente.</p>
+        <div id="executionPresetGrid" class="choice-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>4. IA principal</h2>
+        <label>Provedor principal
+          <select data-path="ai.provider">
+            <option value="openai">OpenAI principal</option>
+            <option value="gemini">Gemini principal</option>
+            <option value="fallback">OpenAI com fallback Gemini</option>
+          </select>
+        </label>
+        <label>Modelo OpenAI
+          <input data-path="ai.openai.model">
+        </label>
+        <label>Modelo Gemini
+          <input data-path="ai.gemini.model">
+        </label>
+        <div id="aiSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>5. Módulos independentes</h2>
+        <p class="hint">Módulo ligado significa que o agente pode analisar essa área. A ação ainda depende das permissões.</p>
+        <div id="moduleButtons" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>6. Permissões por risco</h2>
+        <p class="hint">Aqui você define o que o agente pode alterar no Gmail. Envio e exclusão devem ficar desligados no início.</p>
+        <div id="permissionButtons" class="switch-grid"></div>
+      </section>
+
+      <section class="card wide">
+        <h2>7. Gmail e execução</h2>
+        <p class="hint">Escolha quais caixas do Gmail entram na leitura e quando o agente pode rodar. O máximo aceito é 1000 e-mails por execução.</p>
+        <div class="form-grid">
+          <label>Máximo de e-mails por execução
+            <input type="number" min="1" max="1000" data-path="agent.maxEmailsPerRun">
+          </label>
+          <label>Buscar e-mails dos últimos X dias
+            <input type="number" min="1" max="3650" data-path="gmail.newerThanDays">
+          </label>
+          <label>Etiqueta de processado
+            <input data-path="agent.processedLabel">
+          </label>
+          <label>Busca extra avançada, opcional
+            <input data-path="agent.gmailQuery" placeholder="exemplo: from:cliente@empresa.com OR subject:boleto">
+          </label>
+        </div>
+        <h3>Caixas/categorias do Gmail</h3>
+        <div id="gmailCategorySwitches" class="switch-grid compact"></div>
+        <h3>Filtros de leitura</h3>
+        <div id="gmailSwitches" class="switch-grid compact"></div>
+        <h3>Horários permitidos</h3>
+        <p class="hint">Clique nas horas em que ele pode ser ativado. Se todas estiverem ligadas, ele pode rodar em qualquer hora respeitando o intervalo.</p>
+        <div class="hero-actions">
+          <button data-hours-preset="all">Todas as horas</button>
+          <button data-hours-preset="business">Horário comercial</button>
+          <button data-hours-preset="quiet">Manhã e noite</button>
+        </div>
+        <div id="hourGrid" class="hour-grid"></div>
+        <div class="form-grid">
+          <label>Rodar de quantas em quantas horas
+            <input type="number" min="1" max="24" data-path="automation.intervalHours">
+          </label>
+        </div>
+        <div id="automationSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>8. Newsletter / mailing</h2>
+        <label>Arquivar após X dias
+          <input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays">
+        </label>
+        <label>Apagar após X dias, 0 desliga
+          <input type="number" min="0" max="3650" data-path="newsletter.deleteAfterDays">
+        </label>
+        <label>Remetentes favoritos
+          <input data-path="newsletter.favoriteSenders" data-kind="csv" placeholder="email@exemplo.com">
+        </label>
+        <label>Remetentes confiáveis
+          <input data-path="newsletter.trustedSenders" data-kind="csv">
+        </label>
+        <label>Remetentes bloqueados
+          <input data-path="newsletter.blockedSenders" data-kind="csv">
+        </label>
+        <div id="newsletterSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>9. Apple Calendar e Reminders</h2>
+        <label>Lista de lembretes
+          <input data-path="apple.reminders.listName">
+        </label>
+        <label>Calendário padrão
+          <input data-path="apple.calendar.defaultCalendarName">
+        </label>
+        <label>Alerta do calendário, minutos
+          <input type="number" min="0" max="1440" data-path="apple.calendar.defaultAlertMinutes">
+        </label>
+        <div id="appleSwitches" class="switch-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>10. Siri / Atalhos</h2>
+        <p class="hint">Use os endpoints no app Atalhos com o header <code>x-shortcut-token</code>.</p>
+        <div id="siriSwitches" class="switch-grid"></div>
+        <button id="loadShortcuts">Listar comandos</button>
+        <pre id="shortcuts"></pre>
+      </section>
+
+      <section class="card danger wide">
+        <h2>11. Segurança e remetentes protegidos</h2>
+        <p class="hint">Use para proteger bancos, governo, saúde, jurídico, família e contatos importantes.</p>
+        <div class="form-grid">
+          <label>E-mails protegidos
+            <input data-path="protectedSenders.emails" data-kind="csv" placeholder="pessoa@empresa.com">
+          </label>
+          <label>Domínios protegidos
+            <input data-path="protectedSenders.domains" data-kind="csv" placeholder="empresa.com, gov.br">
+          </label>
+          <label>Palavras protegidas
+            <input data-path="protectedSenders.keywords" data-kind="csv" placeholder="banco, jurídico, saúde">
+          </label>
+        </div>
+        <div id="protectedSwitches" class="switch-grid"></div>
+        <p class="hint">Não há mais frases obrigatórias. Se você ligar uma permissão, o agente entende que você autorizou. Use as chaves de alto risco e remetentes protegidos para controlar cuidado extra.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>12. Logs e aprovações</h2>
+        <div class="hero-actions">
+          <button id="loadLogs">Carregar logs</button>
+          <button id="loadApprovals">Carregar aprovações</button>
+          <button id="loadNewsletters">Relatório newsletters</button>
+        </div>
+        <div id="output" class="output-box"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Segurança por padrão: simulação ligada, envio/exclusão desligados e ações sensíveis registradas em log.</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

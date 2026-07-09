@@ -1,0 +1,128 @@
+{
+  "agent": {
+    "enabled": true,
+    "paused": false,
+    "emergencyStop": false,
+    "autonomyLevel": 2,
+    "dryRun": true,
+    "timezone": "America/Sao_Paulo",
+    "maxEmailsPerRun": 100,
+    "gmailQuery": ""
+  },
+  "gmail": {
+    "useSmartQuery": true,
+    "includeInboxOnly": false,
+    "unreadOnly": false,
+    "newerThanDays": 30,
+    "excludeSent": true,
+    "excludeDrafts": true,
+    "excludeSpamTrash": true,
+    "categories": {
+      "primary": true,
+      "promotions": true,
+      "social": true,
+      "updates": true,
+      "forums": true
+    }
+  },
+  "automation": {
+    "enabled": true,
+    "manualOnly": false,
+    "intervalHours": 1,
+    "allowedHours": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    "weekdaysOnly": false
+  },
+  "ai": {
+    "provider": "openai",
+    "compareProviders": false,
+    "openai": {
+      "enabled": true,
+      "model": "gpt-5.4-mini",
+      "includeBody": false
+    },
+    "gemini": {
+      "enabled": false,
+      "model": "gemini-3.5-flash"
+    }
+  },
+  "modules": {
+    "gmailRead": true,
+    "classification": true,
+    "importantDetection": true,
+    "newsletter": true,
+    "autoArchive": false,
+    "drafts": true,
+    "summaries": true,
+    "threads": true,
+    "pendingReplies": true,
+    "deadlines": true,
+    "appleReminders": true,
+    "appleCalendar": true,
+    "attachments": false,
+    "reports": true,
+    "siriShortcuts": true,
+    "logs": true
+  },
+  "permissions": {
+    "lowRiskAutomatic": true,
+    "mediumRiskRequiresConfirmation": true,
+    "highRiskRequiresExplicitConfirmation": true,
+    "readEmails": true,
+    "classifyEmails": true,
+    "summarizeEmails": true,
+    "applyLabels": true,
+    "markRead": false,
+    "markUnread": false,
+    "createReminders": true,
+    "createReports": true,
+    "archiveEmails": false,
+    "moveEmails": false,
+    "createDrafts": true,
+    "createCalendarEvents": false,
+    "downloadAttachments": false,
+    "unsubscribeNewsletter": false,
+    "sendEmails": false,
+    "deleteEmails": false,
+    "emptyTrash": false,
+    "forwardEmails": false,
+    "bulkActions": false
+  },
+  "newsletter": {
+    "enabled": true,
+    "archiveAfterDays": 5,
+    "deleteAfterDays": 0,
+    "keepFavoritesInInbox": true,
+    "suggestUnsubscribe": true,
+    "requireConfirmationForUnsubscribe": true,
+    "trustedSenders": [],
+    "blockedSenders": [],
+    "favoriteSenders": []
+  },
+  "protectedSenders": {
+    "enabled": true,
+    "requireConfirmationForArchive": true,
+    "requireConfirmationForDelete": true,
+    "emails": [],
+    "domains": [],
+    "keywords": ["banco", "gov.br", "receita", "justiça", "juridico", "saude"]
+  },
+  "apple": {
+    "enabled": true,
+    "integrationType": "shortcuts",
+    "reminders": {
+      "enabled": true,
+      "listName": "Pendências do Gmail",
+      "requireConfirmation": false
+    },
+    "calendar": {
+      "enabled": true,
+      "defaultCalendarName": "Calendário",
+      "defaultAlertMinutes": 30,
+      "requireConfirmation": true
+    }
+  },
+  "siri": {
+    "enabled": true,
+    "requireToken": true
+  }
+}
