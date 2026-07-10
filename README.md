@@ -769,6 +769,7 @@ https://attgiasi.github.io/AGENTES/
 ```
 
 Essa página usa a mesma organização visual do painel local para configurar botões e copiar o JSON para o GitHub Secret.
+Se o navegador não redirecionar sozinho, abra diretamente `https://attgiasi.github.io/AGENTES/pages/`.
 
 Ela não conecta Gmail, não acessa OpenAI, não salva token e não executa o agente. Ela apenas ajuda a montar a configuração.
 
