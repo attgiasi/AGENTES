@@ -68,8 +68,10 @@ app.post('/api/emergency-stop', async (req, res) => {
   settings.agent.paused = true;
   settings.agent.dryRun = true;
   settings.agent.autonomyLevel = 0;
-  Object.assign(settings.permissions, {
+  Object.assign(settings.actions, {
     archiveEmails: false,
+    archiveImmediately: false,
+    markReadImmediately: false,
     moveEmails: false,
     createDrafts: false,
     createCalendarEvents: false,
@@ -93,8 +95,8 @@ app.post('/api/resume-after-emergency', async (req, res) => {
   settings.agent.emergencyStop = false;
   settings.agent.enabled = true;
   settings.agent.paused = false;
-  settings.agent.dryRun = true;
-  settings.agent.autonomyLevel = 2;
+  settings.agent.dryRun = false;
+  settings.agent.autonomyLevel = 1;
   saveSettings(db, settings);
   db.log('info', 'security', 'Agente reativado após emergência em simulação.');
   res.json(await loadSettings(db));

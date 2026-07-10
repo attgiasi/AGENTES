@@ -45,7 +45,7 @@ export async function runAgent(options = {}) {
     }
   }
 
-  if (!settings.modules.gmailRead || !settings.permissions.readEmails) {
+  if (!settings.actions.readEmails) {
     db.log('info', 'agent', 'Leitura de Gmail desligada.');
     const report = await saveRunReport({ startedAt, settings, validation, items });
     return { ok: true, skipped: true, reason: 'Leitura desligada.', ...report };

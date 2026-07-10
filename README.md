@@ -10,7 +10,7 @@ O painel local tem tudo em uma página:
 
 - dashboard geral com arquivados, apagados, descadastros, sugestões, etiquetas, rascunhos, lembretes, eventos, newsletters e falhas;
 - configurações em grids alinhados;
-- cartões de autonomia, sem “tipo de execução” duplicado;
+- cartões de autonomia diretos;
 - seleção visual das 24 horas do dia;
 - seleção das caixas Principal, Promoções, Social, Atualizações e Fórum;
 - escopo próprio para “Marcar como lido”, por categoria;
@@ -668,12 +668,13 @@ O painel local salva configurações no seu computador. O GitHub Actions não en
 
 Então, se você quer que o agente rode no GitHub e arquive automaticamente, o Secret `AGENT_SETTINGS_JSON` também precisa permitir isso.
 
-Exemplo para arquivar newsletters/promoções sem pedir confirmação de risco médio:
+Exemplo direto para ler os e-mails encontrados e arquivar imediatamente:
 
 ```json
 {
   "agent": {
-    "autonomyLevel": 5,
+    "enabled": true,
+    "autonomyLevel": 4,
     "dryRun": false,
     "maxEmailsPerRun": 1000,
     "gmailQuery": ""
@@ -704,14 +705,22 @@ Exemplo para arquivar newsletters/promoções sem pedir confirmação de risco m
   "organizing": {
     "markReadCategories": ["newsletter", "mailing", "promocao"]
   },
-  "modules": {
-    "newsletter": true,
-    "autoArchive": true
+  "execution": {
+    "runSelectedActionsNow": true,
+    "archiveImmediately": true,
+    "markReadImmediately": false
   },
-  "permissions": {
+  "actions": {
+    "readEmails": true,
+    "classifyEmails": true,
+    "summarizeEmails": true,
+    "applyLabels": true,
+    "identifyNewsletter": true,
     "archiveEmails": true,
-    "mediumRiskRequiresConfirmation": false,
-    "deleteEmails": false
+    "archiveImmediately": true,
+    "deleteEmails": false,
+    "sendEmails": false,
+    "unsubscribeNewsletter": false
   },
   "newsletter": {
     "archiveAfterDays": 1,
@@ -727,6 +736,14 @@ Exemplo para arquivar newsletters/promoções sem pedir confirmação de risco m
   }
 }
 ```
+
+O ponto principal é este:
+
+- `autonomyLevel: 4` = autonomia total, não pede aprovação;
+- `actions.archiveEmails: true` = permite arquivar;
+- `actions.archiveImmediately: true` = arquiva todo e-mail processado;
+- `execution.archiveImmediately: true` = redundância explícita para deixar claro que é imediato;
+- `dryRun: false` = não é simulação.
 
 Eu deixei esse exemplo pronto no arquivo:
 
@@ -888,57 +905,54 @@ Comandos disponíveis:
 
 ## Níveis de risco
 
-| Risco | Exemplos | Padrão |
+| Risco | Exemplos | Como controlar |
 |---|---|---|
-| Baixo | ler, resumir, classificar, aplicar etiqueta, criar lembrete, relatório | pode ser automático |
-| Médio | arquivar, criar rascunho, criar evento | pede confirmação |
-| Alto | enviar, apagar, descadastrar newsletter, encaminhar, esvaziar lixeira, ações em lote | desligado |
+| Baixo | ler, resumir, classificar, aplicar etiqueta, criar lembrete, relatório | menu `Ações de baixo risco` |
+| Médio | arquivar, arquivar tudo imediatamente, criar rascunho, criar evento | menu `Ações de médio risco` |
+| Alto | enviar, apagar, descadastrar newsletter, encaminhar, esvaziar lixeira, ações em lote | menu `Ações de alto risco` |
 
 ## Como o agente decide o que fazer
 
 O agente não tem “modo”.
 
-Ele decide tudo usando apenas:
+Ele decide tudo usando principalmente:
 
-- `agent.autonomyLevel`: nível de autonomia de 0 a 7;
+- `agent.autonomyLevel`: nível de autonomia de 0 a 4;
 - `agent.dryRun`: se estiver ligado, ele só simula;
 - `agent.emergencyStop`: trava geral de segurança;
 - `agent.maxEmailsPerRun`: máximo de e-mails por execução, de 1 até 1000;
+- `actions`: menu único com tudo que o agente pode fazer;
+- `execution.archiveImmediately`: redundância explícita para arquivar todos os e-mails processados;
+- `execution.runSelectedActionsNow`: se ligado, executa as ações na própria execução quando a autonomia permite;
 - `gmail`: caixas/categorias do Gmail, busca inteligente e filtros de leitura;
 - `automation`: horários e frequência de execução;
-- `modules`: quais módulos estão ativos;
-- `permissions`: quais ações são permitidas;
 - `newsletter`: regras de mailing e promoções;
 - `protectedSenders`: remetentes/domínios que exigem cuidado extra;
 - `apple`: regras de Lembretes e Calendário;
-- `permissions.highRiskRequiresExplicitConfirmation`: quando ligado, ações perigosas ficam pendentes no painel;
 - `limits`: limites de ações por execução.
 
-Exemplo: se `archiveEmails` estiver desligado, ele não arquiva. Se `createDrafts` estiver ligado, ele pode criar rascunhos. Se `dryRun` estiver ligado, ele só mostra o que faria.
+Exemplo: se `actions.archiveEmails` estiver desligado, ele não arquiva. Se `actions.archiveImmediately` estiver ligado junto com `actions.archiveEmails`, ele arquiva todo e-mail processado. Se `dryRun` estiver ligado, ele só mostra o que faria.
 
 ## Níveis de autonomia
 
 | Nível | O que faz |
 |---|---|
 | 0 | Desligado |
-| 1 | Apenas análise |
-| 2 | Simulação |
-| 3 | Executa baixo risco, como etiquetas |
-| 4 | Risco médio pede aprovação |
-| 5 | Risco médio pode ser automático se permitido |
-| 6 | Alto risco só com aprovação |
-| 7 | Autonomia máxima, ainda respeitando permissões e aprovações do painel |
+| 1 | Baixo controle: pede aprovação para todas as ações |
+| 2 | Médio controle: executa baixo risco; médio e alto pedem aprovação |
+| 3 | Alto controle: executa baixo e médio risco; alto pede aprovação |
+| 4 | Autonomia total: executa toda ação ligada, sem aprovação |
 
-Não há mais frase de segurança obrigatória. Se você ligar uma permissão, o agente entende que você autorizou aquela função. Para manter cuidado extra, deixe `Aprovar alto risco` ligado.
+Não há frase de segurança obrigatória. Se você ligar uma ação e escolher autonomia total, o agente executa.
 
-Para arquivar newsletters automaticamente, use normalmente:
+Para arquivar todos os e-mails encontrados imediatamente, use:
 
-- `Simulação / não alterar Gmail`: desligado;
-- `Autonomia`: nível 5;
-- `Módulo Arquivamento`: ligado;
-- `Arquivar emails`: ligado;
-- `Médio risco confirma`: desligado;
-- `Apagar emails`: desligado.
+- `Simulação`: desligado;
+- `Autonomia`: `Autonomia total`;
+- `Ações de baixo risco → Ler e-mails`: ligado;
+- `Ações de médio risco → Arquivar e-mails`: ligado;
+- `Ações de médio risco → Arquivar tudo imediatamente`: ligado;
+- `Ações de alto risco → Apagar e-mails`: desligado, se você só quer arquivar.
 
 ## Horários de execução
 

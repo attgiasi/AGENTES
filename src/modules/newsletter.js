@@ -18,7 +18,7 @@ export function isNewsletterEmail(email, settings) {
 }
 
 export function newsletterPlan(email, settings) {
-  if (!settings.modules?.newsletter || !settings.newsletter?.enabled) return { isNewsletter: false, actions: [] };
+  if (!settings.actions?.identifyNewsletter || !settings.newsletter?.enabled) return { isNewsletter: false, actions: [] };
   const isNewsletter = isNewsletterEmail(email, settings);
   if (!isNewsletter) return { isNewsletter: false, actions: [] };
 
@@ -31,11 +31,11 @@ export function newsletterPlan(email, settings) {
     actions.push('unsubscribeNewsletter');
   }
 
-  if (settings.modules?.autoArchive && !favorite && (trusted || ageDays >= settings.newsletter.archiveAfterDays)) {
+  if (settings.actions?.archiveEmails && !settings.actions?.archiveImmediately && !favorite && (trusted || ageDays >= settings.newsletter.archiveAfterDays)) {
     actions.push('archiveEmail');
   }
 
-  if (!favorite && settings.permissions.markRead) {
+  if (!favorite && settings.actions?.markRead) {
     actions.push('markRead');
   }
 

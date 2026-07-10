@@ -5,30 +5,30 @@ export const RISK = {
 };
 
 export const ACTIONS = {
-  readEmail: { risk: RISK.LOW, permission: 'readEmails', description: 'Ler email' },
-  summarizeEmail: { risk: RISK.LOW, permission: 'summarizeEmails', description: 'Resumir email' },
-  classifyEmail: { risk: RISK.LOW, permission: 'classifyEmails', description: 'Classificar email' },
-  applyLabel: { risk: RISK.LOW, permission: 'applyLabels', description: 'Aplicar etiqueta' },
-  createReminder: { risk: RISK.LOW, permission: 'createReminders', description: 'Criar lembrete Apple via Atalhos' },
-  createReport: { risk: RISK.LOW, permission: 'createReports', description: 'Criar relatório' },
-  identifyNewsletter: { risk: RISK.LOW, permission: 'classifyEmails', description: 'Identificar newsletter' },
-  markRead: { risk: RISK.LOW, permission: 'markRead', description: 'Marcar como lido' },
-  markUnread: { risk: RISK.LOW, permission: 'markUnread', description: 'Marcar como não lido' },
+  readEmail: { risk: RISK.LOW, action: 'readEmails', description: 'Ler email' },
+  summarizeEmail: { risk: RISK.LOW, action: 'summarizeEmails', description: 'Resumir email' },
+  classifyEmail: { risk: RISK.LOW, action: 'classifyEmails', description: 'Classificar email' },
+  applyLabel: { risk: RISK.LOW, action: 'applyLabels', description: 'Aplicar etiqueta' },
+  createReminder: { risk: RISK.LOW, action: 'createReminders', description: 'Criar lembrete Apple via Atalhos' },
+  createReport: { risk: RISK.LOW, action: 'createReports', description: 'Criar relatório' },
+  identifyNewsletter: { risk: RISK.LOW, action: 'identifyNewsletter', description: 'Identificar newsletter' },
+  markRead: { risk: RISK.LOW, action: 'markRead', description: 'Marcar como lido' },
+  markUnread: { risk: RISK.LOW, action: 'markUnread', description: 'Marcar como não lido' },
 
-  archiveEmail: { risk: RISK.MEDIUM, permission: 'archiveEmails', description: 'Arquivar email' },
-  moveEmail: { risk: RISK.MEDIUM, permission: 'moveEmails', description: 'Mover email' },
-  createDraft: { risk: RISK.MEDIUM, permission: 'createDrafts', description: 'Criar rascunho' },
-  createCalendarEvent: { risk: RISK.MEDIUM, permission: 'createCalendarEvents', description: 'Criar evento Apple via Atalhos' },
-  downloadAttachment: { risk: RISK.MEDIUM, permission: 'downloadAttachments', description: 'Baixar anexo' },
-  unsubscribeNewsletter: { risk: RISK.HIGH, permission: 'unsubscribeNewsletter', confirmation: 'unsubscribe', description: 'Descadastrar newsletter' },
+  archiveEmail: { risk: RISK.MEDIUM, action: 'archiveEmails', description: 'Arquivar email' },
+  moveEmail: { risk: RISK.MEDIUM, action: 'moveEmails', description: 'Mover email' },
+  createDraft: { risk: RISK.MEDIUM, action: 'createDrafts', description: 'Criar rascunho' },
+  createCalendarEvent: { risk: RISK.MEDIUM, action: 'createCalendarEvents', description: 'Criar evento Apple via Atalhos' },
+  downloadAttachment: { risk: RISK.MEDIUM, action: 'downloadAttachments', description: 'Baixar anexo' },
+  unsubscribeNewsletter: { risk: RISK.HIGH, action: 'unsubscribeNewsletter', description: 'Descadastrar newsletter' },
 
-  sendEmail: { risk: RISK.HIGH, permission: 'sendEmails', confirmation: 'sendEmail', description: 'Enviar email' },
-  deleteEmail: { risk: RISK.HIGH, permission: 'deleteEmails', confirmation: 'deleteEmail', description: 'Apagar email' },
-  emptyTrash: { risk: RISK.HIGH, permission: 'emptyTrash', confirmation: 'emptyTrash', description: 'Esvaziar lixeira' },
-  forwardEmail: { risk: RISK.HIGH, permission: 'forwardEmails', confirmation: 'forwardEmail', description: 'Encaminhar email' },
-  alterEvent: { risk: RISK.HIGH, permission: 'alterExistingEvents', confirmation: 'alterEvent', description: 'Alterar evento existente' },
-  deleteEvent: { risk: RISK.HIGH, permission: 'deleteEvents', confirmation: 'alterEvent', description: 'Excluir evento' },
-  bulkActions: { risk: RISK.HIGH, permission: 'bulkActions', confirmation: 'bulkActions', description: 'Executar ações em lote' }
+  sendEmail: { risk: RISK.HIGH, action: 'sendEmails', description: 'Enviar email' },
+  deleteEmail: { risk: RISK.HIGH, action: 'deleteEmails', description: 'Apagar email' },
+  emptyTrash: { risk: RISK.HIGH, action: 'emptyTrash', description: 'Esvaziar lixeira' },
+  forwardEmail: { risk: RISK.HIGH, action: 'forwardEmails', description: 'Encaminhar email' },
+  alterEvent: { risk: RISK.HIGH, action: 'alterExistingEvents', description: 'Alterar evento existente' },
+  deleteEvent: { risk: RISK.HIGH, action: 'deleteEvents', description: 'Excluir evento' },
+  bulkActions: { risk: RISK.HIGH, action: 'bulkActions', description: 'Executar ações em lote' }
 };
 
 export function evaluateAction(actionName, settings) {
@@ -44,13 +44,14 @@ export function evaluateAction(actionName, settings) {
     };
   }
 
-  const permissionOk = Boolean(settings.permissions?.[meta.permission]);
-  if (!permissionOk) {
+  const actionKey = meta.action || meta.permission;
+  const actionOk = Boolean(settings.actions?.[actionKey] ?? settings.permissions?.[actionKey]);
+  if (!actionOk) {
     return {
       allowed: false,
       requiresConfirmation: false,
       risk: meta.risk,
-      reason: `Permissão desligada: ${meta.permission}`
+      reason: `Ação desligada: ${actionKey}`
     };
   }
 
@@ -72,73 +73,48 @@ export function evaluateAction(actionName, settings) {
     };
   }
 
-  if (autonomyLevel <= 2) {
-    return {
-      allowed: false,
-      requiresConfirmation: false,
-      risk: meta.risk,
-      reason: autonomyLevel === 1 ? 'Autonomia nível 1: apenas análise.' : 'Autonomia nível 2: apenas simulação.'
-    };
-  }
-
-  if (meta.risk === RISK.LOW) {
-    return {
-      allowed: autonomyLevel >= 3 && Boolean(settings.permissions.lowRiskAutomatic),
-      requiresConfirmation: !settings.permissions.lowRiskAutomatic,
-      risk: meta.risk,
-      reason: settings.permissions.lowRiskAutomatic ? 'Baixo risco permitido pelo nível de autonomia.' : 'Baixo risco configurado para confirmação.'
-    };
-  }
-
-  if (meta.risk === RISK.MEDIUM) {
-    if (autonomyLevel < 4) {
-      return {
-        allowed: false,
-        requiresConfirmation: false,
-        risk: meta.risk,
-        reason: 'Autonomia abaixo do nível 4: risco médio bloqueado.'
-      };
-    }
-    if (autonomyLevel === 4) {
-      return {
-        allowed: false,
-        requiresConfirmation: true,
-        risk: meta.risk,
-        reason: 'Autonomia nível 4: risco médio exige confirmação.'
-      };
-    }
-    return {
-      allowed: autonomyLevel >= 5 && !settings.permissions.mediumRiskRequiresConfirmation,
-      requiresConfirmation: Boolean(settings.permissions.mediumRiskRequiresConfirmation),
-      risk: meta.risk,
-      reason: settings.permissions.mediumRiskRequiresConfirmation ? 'Risco médio exige confirmação.' : 'Risco médio automático permitido.'
-    };
-  }
-
-  if (autonomyLevel < 6) {
-    return {
-      allowed: false,
-      requiresConfirmation: autonomyLevel >= 4,
-      risk: meta.risk,
-      reason: 'Risco alto exige autonomia nível 6 ou 7.'
-    };
-  }
-
-  const requiresHighRiskApproval = Boolean(settings.permissions.highRiskRequiresExplicitConfirmation);
-  if (autonomyLevel < 7) {
+  if (settings.execution?.runSelectedActionsNow === false) {
     return {
       allowed: false,
       requiresConfirmation: true,
       risk: meta.risk,
-      reason: 'Autonomia nível 6: risco alto fica pendente para aprovação no painel.'
+      reason: 'Executar tudo na hora está desligado: ação ficou pendente.'
     };
   }
+
+  if (autonomyLevel === 1) {
+    return {
+      allowed: false,
+      requiresConfirmation: true,
+      risk: meta.risk,
+      reason: 'Autonomia baixa: toda ação fica pendente para aprovação.'
+    };
+  }
+
+  if (autonomyLevel === 2 && [RISK.MEDIUM, RISK.HIGH].includes(meta.risk)) {
+    return {
+      allowed: false,
+      requiresConfirmation: true,
+      risk: meta.risk,
+      reason: 'Autonomia média: risco médio e alto ficam pendentes para aprovação.'
+    };
+  }
+
+  if (autonomyLevel === 3 && meta.risk === RISK.HIGH) {
+    return {
+      allowed: false,
+      requiresConfirmation: true,
+      risk: meta.risk,
+      reason: 'Autonomia alta: risco alto fica pendente para aprovação.'
+    };
+  }
+
   return {
-    allowed: Boolean(!requiresHighRiskApproval),
-    requiresConfirmation: requiresHighRiskApproval,
+    allowed: true,
+    requiresConfirmation: false,
     risk: meta.risk,
-    reason: requiresHighRiskApproval
-      ? 'Risco alto exige aprovação manual no painel.'
-      : 'Risco alto permitido pela configuração selecionada.'
+    reason: autonomyLevel >= 4
+      ? 'Autonomia total: ação ligada executa sem aprovação.'
+      : 'Ação permitida pelo nível de autonomia.'
   };
 }

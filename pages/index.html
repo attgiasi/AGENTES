@@ -57,7 +57,7 @@
           <div class="status-pill"><strong>Função</strong><span>Montar AGENT_SETTINGS_JSON</span></div>
           <div class="status-pill"><strong>Segurança</strong><span>Não salva senha, token ou chave</span></div>
         </div>
-        <p class="hint">Sem modos fixos: o agente obedece às chaves, permissões, riscos, limites e horários configurados aqui.</p>
+        <p class="hint">Fluxo direto: escolha autonomia, ligue as ações e rode. Se a autonomia permitir, a ação ligada executa.</p>
         <div id="coreSwitches" class="switch-grid"></div>
       </section>
 
@@ -83,24 +83,24 @@
 
       <section class="card wide">
         <h2>3. Nível de autonomia</h2>
-        <p class="hint">Escolha por cartões. O nível define até onde o agente pode ir; as chaves de permissões continuam mandando no que ele realmente executa.</p>
+        <p class="hint">A autonomia decide o que pede aprovação. As ações ligadas decidem o que o agente pode fazer.</p>
         <div id="autonomyGrid" class="choice-grid"></div>
       </section>
 
       <section class="card wide">
-        <h2>4. Módulos independentes</h2>
-        <p class="hint">Módulo ligado significa que o agente pode analisar essa área. A ação ainda depende das permissões.</p>
-        <div id="moduleButtons" class="switch-grid"></div>
+        <h2>4. Ações diretas do agente</h2>
+        <p class="hint">Este é o menu único. Ligue o que você quer que o agente faça. O nível de autonomia acima decide se ele executa direto ou pede aprovação.</p>
+        <h3>Ações de baixo risco</h3>
+        <div id="actionLowSwitches" class="switch-grid"></div>
+        <h3>Ações de médio risco</h3>
+        <p class="hint">Para arquivar todos os e-mails encontrados, ligue “Arquivar e-mails” e “Arquivar tudo imediatamente”.</p>
+        <div id="actionMediumSwitches" class="switch-grid"></div>
+        <h3>Ações de alto risco</h3>
+        <div id="actionHighSwitches" class="switch-grid"></div>
       </section>
 
       <section class="card wide">
-        <h2>5. Permissões por risco</h2>
-        <p class="hint">Aqui você define o que o agente pode alterar no Gmail. Envio e exclusão devem ficar desligados no início.</p>
-        <div id="permissionButtons" class="switch-grid"></div>
-      </section>
-
-      <section class="card wide">
-        <h2>6. Gmail e execução</h2>
+        <h2>5. Gmail e execução</h2>
         <p class="hint">Escolha quais caixas do Gmail entram na leitura e quando o agente pode rodar. O máximo aceito é 1000 e-mails por execução.</p>
         <div class="form-grid">
           <label>Máximo de e-mails por execução
@@ -120,7 +120,7 @@
         <div id="gmailCategorySwitches" class="switch-grid compact"></div>
         <h3>Filtros de leitura</h3>
         <div id="gmailSwitches" class="switch-grid compact"></div>
-        <h3>Escopo para marcar como lido</h3>
+        <h3>Escopo para marcar como lido quando fizer sentido</h3>
         <p class="hint">A chave “Marcar lido” só age nas categorias selecionadas abaixo. Assim ela não sai marcando todos os e-mails.</p>
         <div id="markReadCategoryGrid" class="choice-grid compact"></div>
         <h3>Horários permitidos</h3>
@@ -140,7 +140,7 @@
       </section>
 
       <section class="card">
-        <h2>7. Newsletter / mailing</h2>
+        <h2>6. Newsletter / mailing</h2>
         <label>Arquivar após X dias
           <input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays">
         </label>
@@ -160,7 +160,7 @@
       </section>
 
       <section class="card">
-        <h2>8. Apple Calendar e Reminders</h2>
+        <h2>7. Apple Calendar e Reminders</h2>
         <label>Lista de lembretes
           <input data-path="apple.reminders.listName">
         </label>
@@ -174,13 +174,13 @@
       </section>
 
       <section class="card">
-        <h2>9. Siri / Atalhos</h2>
+        <h2>8. Siri / Atalhos</h2>
         <p class="hint">A configuração online liga/desliga o módulo. Os endpoints reais aparecem no painel local quando o servidor está rodando.</p>
         <div id="siriSwitches" class="switch-grid"></div>
       </section>
 
       <section class="card danger wide">
-        <h2>10. Segurança e remetentes protegidos</h2>
+        <h2>9. Segurança e remetentes protegidos</h2>
         <p class="hint">Use para proteger bancos, governo, saúde, jurídico, família e contatos importantes.</p>
         <div class="form-grid">
           <label>E-mails protegidos
@@ -194,11 +194,11 @@
           </label>
         </div>
         <div id="protectedSwitches" class="switch-grid"></div>
-        <p class="hint">Não há frases obrigatórias. Se você ligar uma permissão, o agente entende que você autorizou aquela função.</p>
+        <p class="hint">Se usar Autonomia total, remetentes protegidos não travam a execução. O que manda é o nível de autonomia e as ações ligadas.</p>
       </section>
 
       <section class="card wide">
-        <h2>11. Resultado para colar no GitHub</h2>
+        <h2>10. Resultado para colar no GitHub</h2>
         <p>Cole este conteúdo em <strong>Settings → Secrets and variables → Actions → AGENT_SETTINGS_JSON</strong>.</p>
         <textarea id="jsonOutput" spellcheck="false"></textarea>
       </section>

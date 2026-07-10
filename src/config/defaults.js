@@ -4,13 +4,13 @@ export const DEFAULT_SETTINGS = {
     enabled: true,
     paused: false,
     emergencyStop: false,
-    autonomyLevel: 2,
+    autonomyLevel: 1,
     locale: 'pt-BR',
     timezone: 'America/Sao_Paulo',
     maxEmailsPerRun: 100,
     gmailQuery: '',
     processedLabel: 'AI Agent/Processado',
-    dryRun: true
+    dryRun: false
   },
   gmail: {
     useSmartQuery: true,
@@ -39,6 +39,38 @@ export const DEFAULT_SETTINGS = {
   organizing: {
     markReadCategories: ['newsletter', 'mailing', 'promocao'],
     note: 'Controla em quais categorias o botão Marcar lido pode agir automaticamente.'
+  },
+  execution: {
+    archiveImmediately: false,
+    markReadImmediately: false,
+    runSelectedActionsNow: true,
+    note: 'Ações diretas executam na mesma rodada quando a autonomia permite.'
+  },
+  actions: {
+    readEmails: true,
+    classifyEmails: true,
+    summarizeEmails: true,
+    applyLabels: true,
+    identifyNewsletter: true,
+    markRead: false,
+    markReadImmediately: false,
+    markUnread: false,
+    createReminders: true,
+    createReports: true,
+    archiveEmails: false,
+    archiveImmediately: false,
+    moveEmails: false,
+    createDrafts: true,
+    createCalendarEvents: false,
+    downloadAttachments: false,
+    unsubscribeNewsletter: false,
+    sendEmails: false,
+    deleteEmails: false,
+    emptyTrash: false,
+    forwardEmails: false,
+    bulkActions: false,
+    alterExistingEvents: false,
+    deleteEvents: false
   },
   ai: {
     provider: 'openai',
@@ -78,9 +110,6 @@ export const DEFAULT_SETTINGS = {
     logs: true
   },
   permissions: {
-    lowRiskAutomatic: true,
-    mediumRiskRequiresConfirmation: true,
-    highRiskRequiresExplicitConfirmation: true,
     readEmails: true,
     classifyEmails: true,
     summarizeEmails: true,
@@ -102,16 +131,6 @@ export const DEFAULT_SETTINGS = {
     bulkActions: false,
     alterExistingEvents: false,
     deleteEvents: false
-  },
-  confirmations: {
-    sendEmail: '',
-    deleteEmail: '',
-    emptyTrash: '',
-    unsubscribe: '',
-    bulkActions: '',
-    forwardEmail: '',
-    alterEvent: '',
-    required: {}
   },
   labels: {
     important: 'AI Agent/Importante',
@@ -204,12 +223,12 @@ export const DEFAULT_SETTINGS = {
     frequentSenders: true
   },
   limits: {
-    maxArchivePerRun: 50,
-    maxDraftsPerRun: 10,
-    maxRemindersPerRun: 20,
-    maxEventsPerRun: 10,
-    maxUnsubscribesPerRun: 3,
-    maxDeletesPerRun: 0,
-    bulkActionLimit: 25
+    maxArchivePerRun: 1000,
+    maxDraftsPerRun: 1000,
+    maxRemindersPerRun: 1000,
+    maxEventsPerRun: 1000,
+    maxUnsubscribesPerRun: 1000,
+    maxDeletesPerRun: 1000,
+    bulkActionLimit: 1000
   }
 };

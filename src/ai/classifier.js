@@ -8,7 +8,7 @@ export async function classifyEmail(email, settings, db = null) {
   const context = buildEmailContext(email, settings);
   const rules = classifyWithRules(email, settings);
 
-  if (!settings.modules.classification) {
+  if (!settings.actions.classifyEmails) {
     return { ...rules, motivo: 'Módulo de classificação desligado.' };
   }
 

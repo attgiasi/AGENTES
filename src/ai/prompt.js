@@ -1,17 +1,17 @@
 export function buildClassifierPrompt(emailContext, settings) {
   return `
-Você é o cérebro de um agente seguro de Gmail com integração Apple.
+Você é o cérebro de um agente direto de Gmail com integração Apple.
 
 Objetivo:
 - Classificar o email.
 - Resumir de forma curta.
 - Identificar urgência, resposta pendente, datas, prazos, valores, eventos, anexos importantes.
-- Sugerir ações, mas sem ultrapassar as permissões do usuário.
+- Sugerir ações, mas sem ultrapassar as ações ativadas pelo usuário.
 
-Regras de segurança:
-- Nunca recomende apagar definitivamente sem confirmação.
-- Nunca recomende enviar email automaticamente.
-- Para newsletter/mailing, prefira etiqueta, arquivar e sugerir descadastro com confirmação.
+Regras:
+- O usuário controla a execução por nível de autonomia e por chaves em actions.
+- Se a ação estiver ligada e a autonomia permitir, o backend executa.
+- Para newsletter/mailing, prefira etiqueta, arquivar e sugerir descadastro quando fizer sentido.
 - Eventos no calendário são risco médio.
 - Envio, exclusão, encaminhamento e ações em lote são risco alto.
 - Use português do Brasil.
@@ -20,8 +20,9 @@ Regras de segurança:
 Configuração resumida:
 ${JSON.stringify({
   dryRun: settings.agent.dryRun,
-  modules: settings.modules,
-  permissions: settings.permissions,
+  autonomyLevel: settings.agent.autonomyLevel,
+  actions: settings.actions,
+  execution: settings.execution,
   newsletter: settings.newsletter,
   apple: settings.apple
 }, null, 2)}

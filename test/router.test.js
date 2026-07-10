@@ -28,7 +28,7 @@ test('organização aplica etiqueta de categoria, processado e marca lido quando
     agent: {
       processedLabel: 'AI Processado'
     },
-    permissions: {
+    actions: {
       markRead: true
     }
   });
@@ -41,7 +41,7 @@ test('organização aplica etiqueta de categoria, processado e marca lido quando
 
 test('não marca como lido email urgente ou que precisa de resposta', () => {
   const settings = normalizeSettings({
-    permissions: {
+    actions: {
       markRead: true
     }
   });
@@ -53,4 +53,15 @@ test('não marca como lido email urgente ou que precisa de resposta', () => {
   }, settings);
 
   assert.equal(actions.some((action) => action.name === 'markRead'), false);
+});
+
+test('arquivamento imediato adiciona archiveEmail para todo email processado', () => {
+  const settings = normalizeSettings({
+    actions: {
+      archiveEmails: true,
+      archiveImmediately: true
+    }
+  });
+  const actions = actionsFromDecision(baseEmail, baseDecision, settings);
+  assert.ok(actions.some((action) => action.name === 'archiveEmail'));
 });

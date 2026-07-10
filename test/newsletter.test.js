@@ -24,10 +24,7 @@ test('detecta newsletter por cabeçalho e categoria do Gmail', () => {
 
 test('planeja arquivamento após idade configurada', () => {
   const settings = normalizeSettings({
-    modules: {
-      autoArchive: true
-    },
-    permissions: {
+    actions: {
       archiveEmails: true,
       unsubscribeNewsletter: true
     },

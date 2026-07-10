@@ -10,5 +10,8 @@ const exportable = structuredClone(settings);
 // Credenciais ficam em outros Secrets: GOOGLE_CREDENTIALS_JSON, GOOGLE_TOKEN_JSON,
 // OPENAI_API_KEY, GEMINI_API_KEY etc.
 delete exportable.confirmations?.required;
+delete exportable.confirmations;
+delete exportable.modules;
+delete exportable.permissions;
 
 console.log(JSON.stringify(exportable, null, 2));

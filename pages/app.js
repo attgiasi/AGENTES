@@ -1,12 +1,9 @@
 const AUTONOMY_LEVELS = [
-  { level: 0, title: '0. Desligado', segment: 'Pausa total', description: 'Não executa o agente.' },
-  { level: 1, title: '1. Análise', segment: 'Só olhar', description: 'Lê, classifica e resume, mas não altera o Gmail.' },
-  { level: 2, title: '2. Simulação', segment: 'Teste seguro', description: 'Mostra o que faria sem mexer nos e-mails.' },
-  { level: 3, title: '3. Organização', segment: 'Baixo risco', description: 'Aplica etiquetas e relatórios se permitido.' },
-  { level: 4, title: '4. Produtividade', segment: 'Confirma risco médio', description: 'Prepara arquivamento, rascunhos e eventos para aprovação.' },
-  { level: 5, title: '5. Automático controlado', segment: 'Execução prática', description: 'Executa risco médio se a confirmação média estiver desligada.' },
-  { level: 6, title: '6. Alto risco protegido', segment: 'Aprovação explícita', description: 'Prepara ações perigosas com confirmação forte.' },
-  { level: 7, title: '7. Máximo configurado', segment: 'Faz tudo que liberar', description: 'Executa tudo que estiver ativado nas permissões.' }
+  { level: 0, title: 'Desabilitado', segment: 'Pausa total', description: 'Não executa o agente.' },
+  { level: 1, title: 'Baixo controle', segment: 'Pede tudo', description: 'Analisa e deixa toda ação pendente para você aprovar.' },
+  { level: 2, title: 'Médio controle', segment: 'Pede médio e alto', description: 'Executa baixo risco. Médio e alto risco ficam pendentes.' },
+  { level: 3, title: 'Alto controle', segment: 'Pede só alto', description: 'Executa baixo e médio risco. Alto risco fica pendente.' },
+  { level: 4, title: 'Autonomia total', segment: 'Executa tudo ligado', description: 'Não pede autorização. Se a ação estiver ligada, o agente executa.' }
 ];
 
 const MARK_READ_CATEGORIES = [
@@ -22,7 +19,8 @@ const MARK_READ_CATEGORIES = [
 const switchGroups = {
   coreSwitches: [
     ['agent.enabled', 'Agente ativo', 'Liga ou desliga o agente inteiro.'],
-    ['agent.dryRun', 'Simulação', 'Mostra o que faria sem alterar o Gmail.']
+    ['agent.dryRun', 'Simulação', 'Mostra o que faria sem alterar o Gmail.'],
+    ['execution.runSelectedActionsNow', 'Executar tudo na hora', 'Executa as ações ativadas na própria execução quando a autonomia permitir.']
   ],
   aiSwitches: [
     ['ai.openai.enabled', 'OpenAI', 'Usa OpenAI para classificar, resumir e decidir.'],
@@ -50,46 +48,33 @@ const switchGroups = {
     ['gmail.excludeDrafts', 'Ignorar rascunhos', 'Não mexe em rascunhos.'],
     ['gmail.excludeSpamTrash', 'Ignorar spam/lixeira', 'Mantém spam e lixeira fora.']
   ],
-  moduleButtons: [
-    ['modules.gmailRead', 'Leitura', 'Permite buscar e ler e-mails.'],
-    ['modules.classification', 'Classificação', 'Classifica e-mails por categoria.'],
-    ['modules.importantDetection', 'Importantes', 'Detecta urgentes e pessoais.'],
-    ['modules.newsletter', 'Newsletter', 'Detecta mailing e promoções.'],
-    ['modules.autoArchive', 'Arquivamento', 'Permite arquivar conforme regras.'],
-    ['modules.drafts', 'Rascunhos', 'Prepara respostas sem enviar.'],
-    ['modules.summaries', 'Resumos', 'Gera resumos de e-mails.'],
-    ['modules.threads', 'Conversas', 'Analisa threads completas.'],
-    ['modules.pendingReplies', 'Pendências', 'Detecta mensagens que pedem resposta.'],
-    ['modules.deadlines', 'Prazos', 'Detecta vencimentos e datas.'],
-    ['modules.appleReminders', 'Lembretes Apple', 'Prepara tarefas para Atalhos.'],
-    ['modules.appleCalendar', 'Calendário Apple', 'Prepara eventos para Atalhos.'],
-    ['modules.attachments', 'Anexos', 'Identifica anexos importantes.'],
-    ['modules.reports', 'Relatórios', 'Gera relatórios.'],
-    ['modules.siriShortcuts', 'Siri/Atalhos', 'Permite comandos externos.'],
-    ['modules.logs', 'Logs', 'Registra ações e erros.']
+  actionLowSwitches: [
+    ['actions.readEmails', 'Ler e-mails', 'Permite consultar Gmail.'],
+    ['actions.classifyEmails', 'Classificar', 'Classifica por categoria.'],
+    ['actions.summarizeEmails', 'Resumir', 'Gera resumos curtos.'],
+    ['actions.applyLabels', 'Aplicar etiquetas', 'Organiza com labels.'],
+    ['actions.identifyNewsletter', 'Identificar newsletter', 'Detecta mailing e promoções.'],
+    ['actions.markRead', 'Marcar lido quando fizer sentido', 'Remove não lido conforme decisão da IA ou newsletter.'],
+    ['actions.markReadImmediately', 'Marcar lido imediatamente', 'Marca todo e-mail processado como lido.'],
+    ['actions.markUnread', 'Marcar não lido', 'Pode marcar mensagens como não lidas.'],
+    ['actions.createReminders', 'Criar lembretes', 'Prepara tarefas para Apple.'],
+    ['actions.createReports', 'Criar relatórios', 'Salva relatórios da execução.']
   ],
-  permissionButtons: [
-    ['permissions.lowRiskAutomatic', 'Baixo risco automático', 'Permite ações seguras, como etiqueta.'],
-    ['permissions.mediumRiskRequiresConfirmation', 'Confirmar risco médio', 'Desligue para arquivar automaticamente.'],
-    ['permissions.highRiskRequiresExplicitConfirmation', 'Aprovar alto risco', 'Envio, exclusão e descadastro ficam pendentes no painel quando ligado.'],
-    ['permissions.readEmails', 'Ler e-mails', 'Permite consultar Gmail.'],
-    ['permissions.classifyEmails', 'Classificar', 'Permite classificar mensagens.'],
-    ['permissions.summarizeEmails', 'Resumir', 'Permite gerar resumos.'],
-    ['permissions.applyLabels', 'Aplicar etiquetas', 'Organiza e-mails com labels.'],
-    ['permissions.markRead', 'Marcar lido', 'Pode remover não lido, apenas no escopo escolhido.'],
-    ['permissions.markUnread', 'Marcar não lido', 'Pode marcar mensagens como não lidas.'],
-    ['permissions.archiveEmails', 'Arquivar e-mails', 'Remove da entrada sem apagar.'],
-    ['permissions.moveEmails', 'Mover e-mails', 'Permite mover entre etiquetas/pastas.'],
-    ['permissions.createDrafts', 'Criar rascunhos', 'Cria respostas sem enviar.'],
-    ['permissions.createReminders', 'Criar lembretes', 'Prepara tarefas.'],
-    ['permissions.createCalendarEvents', 'Criar eventos', 'Prepara eventos.'],
-    ['permissions.downloadAttachments', 'Baixar anexos', 'Permite baixar anexos autorizados.'],
-    ['permissions.unsubscribeNewsletter', 'Descadastrar', 'Alto risco: cancelar inscrições.'],
-    ['permissions.sendEmails', 'Enviar e-mails', 'Alto risco: envia mensagens.'],
-    ['permissions.deleteEmails', 'Apagar e-mails', 'Alto risco: move para lixeira.'],
-    ['permissions.emptyTrash', 'Esvaziar lixeira', 'Altíssimo risco.'],
-    ['permissions.forwardEmails', 'Encaminhar', 'Alto risco: envia conteúdo a terceiros.'],
-    ['permissions.bulkActions', 'Ações em lote', 'Executa muitas ações de uma vez.']
+  actionMediumSwitches: [
+    ['actions.archiveEmails', 'Arquivar e-mails', 'Remove da caixa de entrada sem apagar.'],
+    ['actions.archiveImmediately', 'Arquivar tudo imediatamente', 'Arquiva todo e-mail processado, sem depender da IA recomendar arquivar.'],
+    ['actions.moveEmails', 'Mover e-mails', 'Permite mover entre etiquetas/pastas.'],
+    ['actions.createDrafts', 'Criar rascunhos', 'Cria respostas como rascunho.'],
+    ['actions.createCalendarEvents', 'Criar eventos', 'Prepara eventos de calendário.'],
+    ['actions.downloadAttachments', 'Baixar anexos', 'Permite baixar anexos autorizados.']
+  ],
+  actionHighSwitches: [
+    ['actions.unsubscribeNewsletter', 'Descadastrar newsletter', 'Cancela inscrições quando houver link válido.'],
+    ['actions.sendEmails', 'Enviar e-mails', 'Envia mensagens se uma ação de envio existir.'],
+    ['actions.deleteEmails', 'Apagar e-mails', 'Move para lixeira.'],
+    ['actions.emptyTrash', 'Esvaziar lixeira', 'Remove itens da lixeira quando implementado.'],
+    ['actions.forwardEmails', 'Encaminhar', 'Envia conteúdo a terceiros.'],
+    ['actions.bulkActions', 'Ações em lote', 'Permite ações massivas.']
   ],
   newsletterSwitches: [
     ['newsletter.enabled', 'Newsletter ligado', 'Ativa regras de mailing.'],
@@ -133,8 +118,8 @@ function safePreset() {
       enabled: true,
       paused: false,
       emergencyStop: false,
-      autonomyLevel: 2,
-      dryRun: true,
+      autonomyLevel: 1,
+      dryRun: false,
       timezone: 'America/Sao_Paulo',
       maxEmailsPerRun: 100,
       processedLabel: 'AI Agent/Processado',
@@ -166,50 +151,24 @@ function safePreset() {
     organizing: {
       markReadCategories: ['newsletter', 'mailing', 'promocao']
     },
-    ai: {
-      provider: 'openai',
-      compareProviders: false,
-      openai: {
-        enabled: true,
-        model: 'gpt-5.4-mini',
-        includeBody: false
-      },
-      gemini: {
-        enabled: false,
-        model: 'gemini-3.5-flash'
-      }
+    execution: {
+      archiveImmediately: false,
+      markReadImmediately: false,
+      runSelectedActionsNow: true
     },
-    modules: {
-      gmailRead: true,
-      classification: true,
-      importantDetection: true,
-      newsletter: true,
-      autoArchive: false,
-      drafts: true,
-      summaries: true,
-      threads: true,
-      pendingReplies: true,
-      deadlines: true,
-      appleReminders: true,
-      appleCalendar: true,
-      attachments: false,
-      reports: true,
-      siriShortcuts: true,
-      logs: true
-    },
-    permissions: {
-      lowRiskAutomatic: true,
-      mediumRiskRequiresConfirmation: true,
-      highRiskRequiresExplicitConfirmation: true,
+    actions: {
       readEmails: true,
       classifyEmails: true,
       summarizeEmails: true,
       applyLabels: true,
+      identifyNewsletter: true,
       markRead: false,
+      markReadImmediately: false,
       markUnread: false,
       createReminders: true,
       createReports: true,
       archiveEmails: false,
+      archiveImmediately: false,
       moveEmails: false,
       createDrafts: true,
       createCalendarEvents: false,
@@ -222,6 +181,19 @@ function safePreset() {
       bulkActions: false,
       alterExistingEvents: false,
       deleteEvents: false
+    },
+    ai: {
+      provider: 'openai',
+      compareProviders: false,
+      openai: {
+        enabled: true,
+        model: 'gpt-5.4-mini',
+        includeBody: false
+      },
+      gemini: {
+        enabled: false,
+        model: 'gemini-3.5-flash'
+      }
     },
     newsletter: {
       enabled: true,
@@ -395,7 +367,7 @@ function setAutonomyLevel(level) {
   settings.agent.emergencyStop = false;
   settings.agent.paused = false;
   settings.agent.enabled = level > 0;
-  settings.agent.dryRun = level <= 2 ? true : false;
+  settings.agent.dryRun = false;
 }
 
 function toggleAllowedHour(hour) {
@@ -471,7 +443,15 @@ function updateJson() {
 }
 
 function exportJson() {
-  return `${JSON.stringify(settings, null, 2)}\n`;
+  return `${JSON.stringify(settingsForGitHub(), null, 2)}\n`;
+}
+
+function settingsForGitHub() {
+  const clone = JSON.parse(JSON.stringify(settings));
+  delete clone.modules;
+  delete clone.permissions;
+  delete clone.confirmations;
+  return clone;
 }
 
 function getPath(target, path) {

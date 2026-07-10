@@ -17,7 +17,7 @@ export function buildActionPlan({ email, decision, settings, db }) {
       dryRun: settings.agent.dryRun,
       reason: evaluation.reason
     };
-    const protectedAction = shouldProtectAction(item.name, email, settings);
+    const protectedAction = Number(settings.agent?.autonomyLevel || 0) < 4 && shouldProtectAction(item.name, email, settings);
     const guarded = protectedAction
       ? { ...enriched, reason: 'Remetente protegido: exige aprovação manual.' }
       : enriched;
@@ -59,8 +59,10 @@ export function buildActionPlan({ email, decision, settings, db }) {
 
 export function actionsFromDecision(email, decision, settings) {
   const actions = [];
-  actions.push({ name: 'applyLabel', labelName: labelForDecision(decision, settings) });
-  actions.push({ name: 'applyLabel', labelName: settings.agent?.processedLabel || settings.labels.processed });
+  if (settings.actions?.applyLabels) {
+    actions.push({ name: 'applyLabel', labelName: labelForDecision(decision, settings) });
+    actions.push({ name: 'applyLabel', labelName: settings.agent?.processedLabel || settings.labels.processed });
+  }
 
   const newsletter = newsletterPlan(email, settings);
   if (newsletter.isNewsletter) {
@@ -70,8 +72,10 @@ export function actionsFromDecision(email, decision, settings) {
     }
   }
 
-  if (settings.modules?.autoArchive && decision.acao_recomendada === 'arquivar') actions.push({ name: 'archiveEmail' });
+  if (settings.actions?.archiveEmails && settings.actions?.archiveImmediately) actions.push({ name: 'archiveEmail', reason: 'Arquivamento imediato ligado.' });
+  if (settings.actions?.archiveEmails && !settings.actions?.archiveImmediately && decision.acao_recomendada === 'arquivar') actions.push({ name: 'archiveEmail' });
   if (decision.acao_recomendada === 'marcar_lido') actions.push({ name: 'markRead' });
+  if (settings.actions?.markRead && settings.actions?.markReadImmediately && email.labelIds?.includes('UNREAD')) actions.push({ name: 'markRead', reason: 'Marcar lido imediatamente ligado.' });
   if (shouldAutoMarkRead(email, decision, settings)) actions.push({ name: 'markRead' });
   if (decision.acao_recomendada === 'rascunho' || decision.precisa_resposta) {
     actions.push({
@@ -91,7 +95,7 @@ export function actionsFromDecision(email, decision, settings) {
   if (decision.acao_recomendada === 'descadastro') actions.push({ name: 'unsubscribeNewsletter' });
   if (decision.acao_recomendada === 'excluir_com_confirmacao') actions.push({ name: 'deleteEmail' });
 
-  const safeActions = isUnsafeToMarkRead(decision) || !isCategoryAllowedToMarkRead(decision, settings, newsletter)
+  const safeActions = !settings.actions?.markReadImmediately && (isUnsafeToMarkRead(decision) || !isCategoryAllowedToMarkRead(decision, settings, newsletter))
     ? actions.filter((action) => action.name !== 'markRead')
     : actions;
   return dedupeActions(safeActions);

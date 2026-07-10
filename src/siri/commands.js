@@ -21,16 +21,13 @@ export async function handleSiriCommand(command, { db, body = {} }) {
   }
 
   if (command === 'foco-trabalho') {
-    settings.modules.importantDetection = true;
-    settings.modules.pendingReplies = true;
-    settings.modules.deadlines = true;
-    settings.modules.drafts = true;
-    settings.modules.appleReminders = true;
-    settings.modules.appleCalendar = true;
-    settings.permissions.createDrafts = true;
-    settings.permissions.createReminders = true;
+    settings.actions.createDrafts = true;
+    settings.actions.createReminders = true;
+    settings.actions.createCalendarEvents = true;
+    settings.actions.applyLabels = true;
+    settings.actions.summarizeEmails = true;
     saveSettings(db, settings);
-    return shortcutResponse('Configuração de trabalho aplicada. Vou priorizar respostas, prazos, rascunhos, lembretes e eventos conforme suas permissões.');
+    return shortcutResponse('Configuração de trabalho aplicada. Vou priorizar respostas, prazos, rascunhos, lembretes e eventos conforme suas ações ativadas.');
   }
 
   if (command === 'limpar-newsletters' || command === 'arquivar-newsletters-antigas') {

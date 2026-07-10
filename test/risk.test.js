@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { evaluateAction } from '../src/security/risk.js';
 import { normalizeSettings } from '../src/settings.js';
 
-test('ação de baixo risco pode ser automática por padrão', () => {
+test('ação de baixo risco executa quando autonomia média está ativa', () => {
   const settings = normalizeSettings({
     agent: {
-      autonomyLevel: 3,
+      autonomyLevel: 2,
       dryRun: false
     }
   });
@@ -15,15 +15,14 @@ test('ação de baixo risco pode ser automática por padrão', () => {
   assert.equal(result.risk, 'baixo');
 });
 
-test('envio de email fica pendente quando aprovação de alto risco está ligada', () => {
+test('alto risco fica pendente na autonomia alta', () => {
   const settings = normalizeSettings({
     agent: {
-      autonomyLevel: 6,
+      autonomyLevel: 3,
       dryRun: false
     },
-    permissions: {
-      sendEmails: true,
-      highRiskRequiresExplicitConfirmation: true
+    actions: {
+      sendEmails: true
     }
   });
   const result = evaluateAction('sendEmail', settings);
@@ -32,15 +31,14 @@ test('envio de email fica pendente quando aprovação de alto risco está ligada
   assert.equal(result.risk, 'alto');
 });
 
-test('alto risco pode executar sem frase quando usuário liga a configuração', () => {
+test('alto risco executa direto em autonomia total quando ação está ligada', () => {
   const settings = normalizeSettings({
     agent: {
-      autonomyLevel: 7,
+      autonomyLevel: 4,
       dryRun: false
     },
-    permissions: {
-      sendEmails: true,
-      highRiskRequiresExplicitConfirmation: false
+    actions: {
+      sendEmails: true
     }
   });
   const result = evaluateAction('sendEmail', settings);
