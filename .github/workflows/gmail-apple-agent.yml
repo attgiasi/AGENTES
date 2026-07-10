@@ -2,6 +2,17 @@ name: Gmail Apple IA Agent
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - ".github/workflows/gmail-apple-agent.yml"
+      - "src/**"
+      - "scripts/**"
+      - "test/**"
+      - "package.json"
+      - "package-lock.json"
   schedule:
     - cron: "0 * * * *"
 

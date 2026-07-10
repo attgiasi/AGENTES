@@ -433,6 +433,7 @@ function bind() {
   });
 
   document.querySelector('#refresh').addEventListener('click', loadStatus);
+  document.querySelector('#copyGithubSettings').addEventListener('click', copyGithubSettings);
   document.querySelector('#refreshDashboard').addEventListener('click', loadDashboard);
   document.querySelector('#emergencyStop').addEventListener('click', async () => {
     if (!confirm('Tem certeza? Isso vai pausar o agente, ligar simulação e desligar ações sensíveis.')) return;
@@ -540,6 +541,24 @@ async function api(url, options = {}) {
 
 function show(value) {
   document.querySelector('#output').textContent = JSON.stringify(value, null, 2);
+}
+
+async function copyGithubSettings() {
+  if (!settings) await loadSettings();
+  const json = `${JSON.stringify(settings, null, 2)}\n`;
+  await navigator.clipboard.writeText(json);
+  show({
+    ok: true,
+    secret: 'AGENT_SETTINGS_JSON',
+    message: 'Configuração copiada. Cole no GitHub em Settings → Secrets and variables → Actions → AGENT_SETTINGS_JSON.',
+    nextSteps: [
+      'Abra o repositório AGENTES no GitHub.',
+      'Entre em Settings → Secrets and variables → Actions.',
+      'Edite ou crie o secret AGENT_SETTINGS_JSON.',
+      'Cole o conteúdo copiado e salve.'
+    ]
+  });
+  alert('Configuração copiada. Cole no Secret AGENT_SETTINGS_JSON do GitHub.');
 }
 
 function renderMiniList(selector, items, template, emptyText) {
