@@ -9,15 +9,15 @@ token.json
 agent-settings.json
 
 # Banco e logs locais.
-data/*.sqlite
-data/*.sqlite-*
-logs/*.json
-logs/*.md
+/data/*.sqlite
+/data/*.sqlite-*
+/logs/*.json
+/logs/*.md
 
 # Artefatos
 *.zip
-reports/
-gmail-apple-ia-agent/
+/reports/
+/gmail-apple-ia-agent/
 
 # Sistema/editor
 .DS_Store
