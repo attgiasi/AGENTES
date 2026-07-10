@@ -8,12 +8,12 @@ Este README está organizado na ordem certa de execução para Windows usando Po
 
 O painel local tem tudo em uma página:
 
-- dashboard geral com arquivados, apagados, descadastros, sugestões, aprovações, newsletters, ações recentes e logs;
+- dashboard geral com arquivados, apagados, descadastros, sugestões, etiquetas, rascunhos, lembretes, eventos, newsletters e falhas;
 - configurações em grids alinhados;
-- cartões de autonomia;
-- cartões de tipo de execução;
+- cartões de autonomia, sem “tipo de execução” duplicado;
 - seleção visual das 24 horas do dia;
 - seleção das caixas Principal, Promoções, Social, Atualizações e Fórum;
+- escopo próprio para “Marcar como lido”, por categoria;
 - limite de até 1000 e-mails por execução;
 - permissões por chave liga/desliga, sem frase de segurança obrigatória.
 
@@ -701,6 +701,9 @@ Exemplo para arquivar newsletters/promoções sem pedir confirmação de risco m
     "allowedHours": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
     "weekdaysOnly": false
   },
+  "organizing": {
+    "markReadCategories": ["newsletter", "mailing", "promocao"]
+  },
   "modules": {
     "newsletter": true,
     "autoArchive": true
@@ -765,9 +768,38 @@ Também existe uma página estática para montar/copiar o `AGENT_SETTINGS_JSON` 
 https://attgiasi.github.io/AGENTES/
 ```
 
-Essa página serve para configurar botões e copiar o JSON para o GitHub Secret.
+Essa página usa a mesma organização visual do painel local para configurar botões e copiar o JSON para o GitHub Secret.
 
 Ela não conecta Gmail, não acessa OpenAI, não salva token e não executa o agente. Ela apenas ajuda a montar a configuração.
+
+A diferença é simples:
+
+- painel local: configura, mostra status real, roda o agente, mostra logs e dashboard real;
+- página online: configura e copia o JSON para você colar no GitHub.
+
+## Como configurar online, direto pelo GitHub
+
+1. Abra:
+
+```text
+https://attgiasi.github.io/AGENTES/
+```
+
+2. Ajuste os cartões e chaves da página.
+3. Em `Nível de autonomia`, escolha até onde o agente pode ir.
+4. Em `Gmail e execução`, escolha as caixas que entram na leitura.
+5. Em `Escopo para marcar como lido`, escolha quais categorias podem ser marcadas como lidas.
+6. Clique em `Copiar JSON`.
+7. No GitHub, abra o repositório `AGENTES`.
+8. Vá em `Settings`.
+9. Vá em `Secrets and variables`.
+10. Clique em `Actions`.
+11. Abra ou crie o Secret `AGENT_SETTINGS_JSON`.
+12. Cole o JSON copiado e salve.
+
+Pronto: na próxima execução do GitHub Actions, o agente vai usar essa configuração.
+
+Observação importante: o GitHub Pages não pode alterar Secrets automaticamente sem uma autenticação especial. Por isso a página online monta e copia a configuração, e você cola no Secret.
 
 ## Como publicar o configurador no Pages
 

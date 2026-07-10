@@ -9,98 +9,27 @@ const AUTONOMY_LEVELS = [
   { level: 7, title: '7. Máximo configurado', segment: 'Faz tudo que liberar', description: 'Executa tudo que estiver ativado nas permissões.' }
 ];
 
-const EXECUTION_PRESETS = [
-  {
-    id: 'safe',
-    title: 'Seguro para testar',
-    description: 'Simulação ligada. Nada é alterado.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = true;
-      next.agent.autonomyLevel = 2;
-      next.modules.autoArchive = false;
-      next.permissions.archiveEmails = false;
-      next.permissions.deleteEmails = false;
-      next.permissions.sendEmails = false;
-      next.permissions.unsubscribeNewsletter = false;
-    }
-  },
-  {
-    id: 'organize',
-    title: 'Organizar caixa',
-    description: 'Classifica, etiqueta e destaca urgentes.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 3;
-      Object.assign(next.modules, { gmailRead: true, classification: true, importantDetection: true, summaries: true, reports: true, autoArchive: false });
-      Object.assign(next.permissions, { readEmails: true, classifyEmails: true, summarizeEmails: true, applyLabels: true, createReports: true, archiveEmails: false });
-    }
-  },
-  {
-    id: 'productivity',
-    title: 'Produtividade',
-    description: 'Rascunhos, lembretes e eventos com aprovação.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 4;
-      Object.assign(next.modules, { deadlines: true, pendingReplies: true, drafts: true, appleReminders: true, appleCalendar: true, reports: true });
-      Object.assign(next.permissions, { createReminders: true, createDrafts: true, createCalendarEvents: true, mediumRiskRequiresConfirmation: true });
-    }
-  },
-  {
-    id: 'cleanup',
-    title: 'Limpeza de newsletters',
-    description: 'Arquiva newsletters antigas sem apagar.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 5;
-      next.agent.maxEmailsPerRun = 1000;
-      Object.assign(next.modules, { newsletter: true, autoArchive: true, reports: true, logs: true });
-      Object.assign(next.permissions, {
-        archiveEmails: true,
-        applyLabels: true,
-        mediumRiskRequiresConfirmation: false,
-        deleteEmails: false,
-        emptyTrash: false,
-        unsubscribeNewsletter: false
-      });
-      next.newsletter.enabled = true;
-      next.newsletter.deleteAfterDays = 0;
-    }
-  },
-  {
-    id: 'responses',
-    title: 'Responder melhor',
-    description: 'Cria rascunhos, nunca envia sozinho.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 4;
-      Object.assign(next.modules, { pendingReplies: true, drafts: true, summaries: true });
-      Object.assign(next.permissions, { createDrafts: true, sendEmails: false, mediumRiskRequiresConfirmation: true });
-    }
-  },
-  {
-    id: 'maximum',
-    title: 'Máximo com travas',
-    description: 'Liga módulos e permissões; alto risco pode ficar pendente se a chave de aprovação estiver ligada.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 7;
-      next.agent.maxEmailsPerRun = 1000;
-      for (const key of Object.keys(next.modules)) next.modules[key] = true;
-      for (const key of Object.keys(next.permissions)) next.permissions[key] = true;
-      next.permissions.highRiskRequiresExplicitConfirmation = true;
-      next.permissions.mediumRiskRequiresConfirmation = false;
-    }
-  }
+const MARK_READ_CATEGORIES = [
+  ['newsletter', 'Newsletter', 'Boletins e mensagens recorrentes com link de descadastro.'],
+  ['mailing', 'Mailing', 'Listas de divulgação, campanhas e comunicados em massa.'],
+  ['promocao', 'Promoções', 'Ofertas, cupons, lojas e campanhas promocionais.'],
+  ['outro', 'Geral baixo risco', 'E-mails gerais que a IA classificou como sem ação importante.'],
+  ['financeiro', 'Financeiro', 'Use com cuidado: boletos, cobranças e pagamentos.'],
+  ['trabalho', 'Trabalho', 'Use com cuidado: mensagens profissionais sem urgência.'],
+  ['documento', 'Documentos', 'Use com cuidado: contratos, comprovantes e arquivos.']
 ];
 
 const switchGroups = {
+  coreSwitches: [
+    ['agent.enabled', 'Agente ativo', 'Liga ou desliga o agente inteiro.'],
+    ['agent.dryRun', 'Simulação', 'Mostra o que faria sem alterar o Gmail.']
+  ],
+  aiSwitches: [
+    ['ai.openai.enabled', 'OpenAI', 'Usa OpenAI para classificar, resumir e decidir.'],
+    ['ai.gemini.enabled', 'Gemini', 'Ativa Gemini como opção ou fallback.'],
+    ['ai.compareProviders', 'Comparar IAs', 'Compara OpenAI e Gemini em testes.'],
+    ['ai.openai.includeBody', 'Enviar corpo', 'Envia o texto do e-mail para a IA analisar.']
+  ],
   automationSwitches: [
     ['automation.enabled', 'Automação agendada', 'Permite rodar sozinho pelo GitHub Actions.'],
     ['automation.manualOnly', 'Somente manual', 'Bloqueia execuções automáticas.'],
@@ -147,14 +76,19 @@ const switchGroups = {
     ['permissions.classifyEmails', 'Classificar', 'Permite classificar mensagens.'],
     ['permissions.summarizeEmails', 'Resumir', 'Permite gerar resumos.'],
     ['permissions.applyLabels', 'Aplicar etiquetas', 'Organiza e-mails com labels.'],
+    ['permissions.markRead', 'Marcar lido', 'Pode remover não lido, apenas no escopo escolhido.'],
+    ['permissions.markUnread', 'Marcar não lido', 'Pode marcar mensagens como não lidas.'],
     ['permissions.archiveEmails', 'Arquivar e-mails', 'Remove da entrada sem apagar.'],
+    ['permissions.moveEmails', 'Mover e-mails', 'Permite mover entre etiquetas/pastas.'],
     ['permissions.createDrafts', 'Criar rascunhos', 'Cria respostas sem enviar.'],
     ['permissions.createReminders', 'Criar lembretes', 'Prepara tarefas.'],
     ['permissions.createCalendarEvents', 'Criar eventos', 'Prepara eventos.'],
+    ['permissions.downloadAttachments', 'Baixar anexos', 'Permite baixar anexos autorizados.'],
     ['permissions.unsubscribeNewsletter', 'Descadastrar', 'Alto risco: cancelar inscrições.'],
     ['permissions.sendEmails', 'Enviar e-mails', 'Alto risco: envia mensagens.'],
     ['permissions.deleteEmails', 'Apagar e-mails', 'Alto risco: move para lixeira.'],
     ['permissions.emptyTrash', 'Esvaziar lixeira', 'Altíssimo risco.'],
+    ['permissions.forwardEmails', 'Encaminhar', 'Alto risco: envia conteúdo a terceiros.'],
     ['permissions.bulkActions', 'Ações em lote', 'Executa muitas ações de uma vez.']
   ],
   newsletterSwitches: [
@@ -169,6 +103,16 @@ const switchGroups = {
     ['protectedSenders.enabled', 'Proteção ligada', 'Protege remetentes importantes.'],
     ['protectedSenders.requireConfirmationForArchive', 'Confirmar arquivar', 'Exige aprovação para arquivar protegidos.'],
     ['protectedSenders.requireConfirmationForDelete', 'Confirmar apagar', 'Exige aprovação para apagar protegidos.']
+  ],
+  appleSwitches: [
+    ['apple.enabled', 'Apple', 'Habilita integração via Atalhos.'],
+    ['apple.reminders.enabled', 'Lembretes', 'Prepara tarefas para Reminders.'],
+    ['apple.calendar.enabled', 'Calendário', 'Prepara eventos para Calendar.'],
+    ['apple.calendar.requireConfirmation', 'Confirmar eventos', 'Pede aprovação antes de criar eventos.']
+  ],
+  siriSwitches: [
+    ['siri.enabled', 'Siri/Atalhos', 'Ativa comandos externos pelo iPhone.'],
+    ['siri.requireToken', 'Exigir token', 'Protege endpoints dos Atalhos.']
   ]
 };
 
@@ -177,7 +121,7 @@ let settings = safePreset();
 document.addEventListener('DOMContentLoaded', () => {
   renderSwitches();
   renderAutonomyGrid();
-  renderExecutionPresetGrid();
+  renderMarkReadCategoryGrid();
   renderHourGrid();
   bindEvents();
   updateForm();
@@ -193,6 +137,7 @@ function safePreset() {
       dryRun: true,
       timezone: 'America/Sao_Paulo',
       maxEmailsPerRun: 100,
+      processedLabel: 'AI Agent/Processado',
       gmailQuery: ''
     },
     gmail: {
@@ -217,6 +162,22 @@ function safePreset() {
       intervalHours: 1,
       allowedHours: Array.from({ length: 24 }, (_, hour) => hour),
       weekdaysOnly: false
+    },
+    organizing: {
+      markReadCategories: ['newsletter', 'mailing', 'promocao']
+    },
+    ai: {
+      provider: 'openai',
+      compareProviders: false,
+      openai: {
+        enabled: true,
+        model: 'gpt-5.4-mini',
+        includeBody: false
+      },
+      gemini: {
+        enabled: false,
+        model: 'gemini-3.5-flash'
+      }
     },
     modules: {
       gmailRead: true,
@@ -275,6 +236,25 @@ function safePreset() {
       trustedSenders: [],
       blockedSenders: []
     },
+    apple: {
+      enabled: true,
+      integrationType: 'shortcuts',
+      reminders: {
+        enabled: true,
+        listName: 'Pendências do Gmail',
+        requireConfirmation: false
+      },
+      calendar: {
+        enabled: true,
+        defaultCalendarName: 'Calendário',
+        defaultAlertMinutes: 30,
+        requireConfirmation: true
+      }
+    },
+    siri: {
+      enabled: true,
+      requireToken: true
+    },
     protectedSenders: {
       enabled: true,
       requireConfirmationForArchive: true,
@@ -304,12 +284,14 @@ function renderAutonomyGrid() {
   `).join('');
 }
 
-function renderExecutionPresetGrid() {
-  document.querySelector('#executionPresetGrid').innerHTML = EXECUTION_PRESETS.map((item) => `
-    <button class="choice-card" data-execution-preset="${escapeHtml(item.id)}">
-      <span class="badge">Execução</span>
-      <strong>${escapeHtml(item.title)}</strong>
-      <small>${escapeHtml(item.description)}</small>
+function renderMarkReadCategoryGrid() {
+  const container = document.querySelector('#markReadCategoryGrid');
+  if (!container) return;
+  container.innerHTML = MARK_READ_CATEGORIES.map(([value, title, description]) => `
+    <button class="choice-card" data-array-path="organizing.markReadCategories" data-array-value="${escapeHtml(value)}">
+      <span class="badge">Marcar lido</span>
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(description)}</small>
     </button>
   `).join('');
 }
@@ -337,7 +319,7 @@ function bindEvents() {
   document.body.addEventListener('click', (event) => {
     const toggle = event.target.closest('.toggle[data-path]');
     const autonomyCard = event.target.closest('[data-autonomy-level]');
-    const presetCard = event.target.closest('[data-execution-preset]');
+    const arrayToggle = event.target.closest('[data-array-path][data-array-value]');
     const hourButton = event.target.closest('[data-hour-toggle]');
     const hourPreset = event.target.closest('[data-hours-preset]');
 
@@ -346,9 +328,8 @@ function bindEvents() {
       updateForm();
       return;
     }
-    if (presetCard) {
-      const preset = EXECUTION_PRESETS.find((item) => item.id === presetCard.dataset.executionPreset);
-      if (preset) preset.apply(settings);
+    if (arrayToggle) {
+      toggleArrayValue(arrayToggle.dataset.arrayPath, arrayToggle.dataset.arrayValue);
       updateForm();
       return;
     }
@@ -369,7 +350,7 @@ function bindEvents() {
   });
 
   document.body.addEventListener('input', (event) => {
-    const input = event.target.closest('input[data-path]');
+    const input = event.target.closest('input[data-path], select[data-path]');
     if (!input) return;
     const current = getPath(settings, input.dataset.path);
     const value = input.dataset.kind === 'csv'
@@ -379,6 +360,13 @@ function bindEvents() {
         : input.value;
     setPath(settings, input.dataset.path, value);
     updateJson();
+  });
+
+  document.body.addEventListener('change', (event) => {
+    const input = event.target.closest('select[data-path]');
+    if (!input) return;
+    setPath(settings, input.dataset.path, input.value);
+    updateForm();
   });
 
   document.querySelector('#safePreset').addEventListener('click', () => {
@@ -424,6 +412,21 @@ function toggleAllowedHour(hour) {
   settings.automation.allowedHours = [...current].sort((a, b) => a - b);
 }
 
+function toggleArrayValue(path, value) {
+  const currentValues = Array.isArray(getPath(settings, path)) ? getPath(settings, path) : [];
+  const current = new Set(currentValues);
+  if (current.has(value)) {
+    if (current.size === 1) {
+      alert('Deixe pelo menos uma categoria ligada para evitar configuração vazia.');
+      return;
+    }
+    current.delete(value);
+  } else {
+    current.add(value);
+  }
+  setPath(settings, path, [...current]);
+}
+
 function applyHourPreset(id) {
   if (id === 'all') settings.automation.allowedHours = Array.from({ length: 24 }, (_, hour) => hour);
   if (id === 'business') settings.automation.allowedHours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -437,12 +440,20 @@ function updateForm() {
     button.setAttribute('aria-pressed', String(value));
     button.querySelector('.switch-state').textContent = value ? 'Ligado' : 'Desligado';
   });
-  document.querySelectorAll('input[data-path]').forEach((input) => {
+  document.querySelectorAll('input[data-path], select[data-path]').forEach((input) => {
     const value = getPath(settings, input.dataset.path);
-    input.value = Array.isArray(value) ? value.join(', ') : value ?? '';
+    if (document.activeElement !== input) input.value = Array.isArray(value) ? value.join(', ') : value ?? '';
   });
   document.querySelectorAll('[data-autonomy-level]').forEach((button) => {
     const selected = Number(button.dataset.autonomyLevel) === Number(settings.agent.autonomyLevel);
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  document.querySelectorAll('[data-array-path][data-array-value]').forEach((button) => {
+    const values = Array.isArray(getPath(settings, button.dataset.arrayPath))
+      ? getPath(settings, button.dataset.arrayPath)
+      : [];
+    const selected = values.includes(button.dataset.arrayValue);
     button.classList.toggle('is-selected', selected);
     button.setAttribute('aria-pressed', String(selected));
   });

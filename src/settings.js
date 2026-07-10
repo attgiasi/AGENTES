@@ -43,6 +43,7 @@ export function normalizeSettings(raw) {
   settings.gmail.newerThanDays = clampNumber(settings.gmail.newerThanDays, 1, 3650, 30);
   settings.automation.intervalHours = clampNumber(settings.automation.intervalHours, 1, 24, 1);
   settings.automation.allowedHours = normalizeHours(settings.automation.allowedHours);
+  settings.organizing.markReadCategories = normalizeMarkReadCategories(settings.organizing.markReadCategories);
   settings.newsletter.archiveAfterDays = clampNumber(settings.newsletter.archiveAfterDays, 1, 365, 5);
   settings.newsletter.deleteAfterDays = clampNumber(settings.newsletter.deleteAfterDays, 0, 3650, 0);
   settings.limits.maxArchivePerRun = clampNumber(settings.limits.maxArchivePerRun, 0, 500, 50);
@@ -95,6 +96,18 @@ function normalizeHours(value) {
     .filter((number) => Number.isInteger(number) && number >= 0 && number <= 23);
   const unique = [...new Set(hours)].sort((a, b) => a - b);
   return unique.length ? unique : Array.from({ length: 24 }, (_, hour) => hour);
+}
+
+function normalizeMarkReadCategories(value) {
+  const allowed = new Set(['newsletter', 'mailing', 'promocao', 'outro', 'financeiro', 'trabalho', 'documento']);
+  const raw = Array.isArray(value)
+    ? value
+    : String(value || '').split(',');
+  const selected = raw
+    .map((item) => String(item).trim())
+    .filter((item) => allowed.has(item));
+  const unique = [...new Set(selected)];
+  return unique.length ? unique : ['newsletter', 'mailing', 'promocao'];
 }
 
 function clampNumber(value, min, max, fallback) {

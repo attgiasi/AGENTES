@@ -11,135 +11,14 @@ const AUTONOMY_LEVELS = [
   { level: 7, title: '7. Máximo configurado', segment: 'Faz tudo que você liberar', description: 'Executa tudo que estiver ativado nas permissões. Use a chave de aprovação para deixar alto risco pendente no painel.' }
 ];
 
-const EXECUTION_PRESETS = [
-  {
-    id: 'safe',
-    title: 'Seguro para testar',
-    description: 'Liga leitura, IA, etiquetas e relatórios em simulação. Nada é alterado.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = true;
-      next.agent.autonomyLevel = 2;
-      next.modules.autoArchive = false;
-      next.permissions.archiveEmails = false;
-      next.permissions.deleteEmails = false;
-      next.permissions.sendEmails = false;
-      next.permissions.unsubscribeNewsletter = false;
-    }
-  },
-  {
-    id: 'organize',
-    title: 'Organizar caixa',
-    description: 'Classifica, etiqueta e destaca urgente/pessoal sem arquivar automaticamente.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 3;
-      Object.assign(next.modules, {
-        gmailRead: true,
-        classification: true,
-        importantDetection: true,
-        summaries: true,
-        reports: true,
-        autoArchive: false
-      });
-      Object.assign(next.permissions, {
-        readEmails: true,
-        classifyEmails: true,
-        summarizeEmails: true,
-        applyLabels: true,
-        createReports: true,
-        archiveEmails: false
-      });
-    }
-  },
-  {
-    id: 'productivity',
-    title: 'Produtividade',
-    description: 'Cria pendências, rascunhos e eventos com confirmação antes de ações médias.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 4;
-      Object.assign(next.modules, {
-        deadlines: true,
-        pendingReplies: true,
-        drafts: true,
-        appleReminders: true,
-        appleCalendar: true,
-        reports: true
-      });
-      Object.assign(next.permissions, {
-        createReminders: true,
-        createDrafts: true,
-        createCalendarEvents: true,
-        mediumRiskRequiresConfirmation: true
-      });
-    }
-  },
-  {
-    id: 'cleanup',
-    title: 'Limpeza de newsletters',
-    description: 'Arquiva newsletters antigas e promoções sem apagar mensagens.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 5;
-      next.agent.maxEmailsPerRun = 1000;
-      Object.assign(next.modules, {
-        newsletter: true,
-        autoArchive: true,
-        reports: true,
-        logs: true
-      });
-      Object.assign(next.permissions, {
-        archiveEmails: true,
-        applyLabels: true,
-        mediumRiskRequiresConfirmation: false,
-        deleteEmails: false,
-        emptyTrash: false,
-        unsubscribeNewsletter: false
-      });
-      next.newsletter.enabled = true;
-      next.newsletter.archiveAfterDays = Math.max(1, Number(next.newsletter.archiveAfterDays || 5));
-      next.newsletter.deleteAfterDays = 0;
-    }
-  },
-  {
-    id: 'responses',
-    title: 'Responder melhor',
-    description: 'Detecta o que precisa de resposta e cria rascunhos, sem enviar sozinho.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 4;
-      Object.assign(next.modules, {
-        pendingReplies: true,
-        drafts: true,
-        summaries: true
-      });
-      Object.assign(next.permissions, {
-        createDrafts: true,
-        sendEmails: false,
-        mediumRiskRequiresConfirmation: true
-      });
-    }
-  },
-  {
-    id: 'maximum',
-    title: 'Máximo com travas',
-    description: 'Liga módulos e permissões. Ações perigosas podem ficar pendentes no painel se a aprovação de alto risco estiver ligada.',
-    apply: (next) => {
-      next.agent.enabled = true;
-      next.agent.dryRun = false;
-      next.agent.autonomyLevel = 7;
-      next.agent.maxEmailsPerRun = 1000;
-      for (const key of Object.keys(next.modules)) next.modules[key] = true;
-      for (const key of Object.keys(next.permissions)) next.permissions[key] = true;
-      next.permissions.highRiskRequiresExplicitConfirmation = true;
-      next.permissions.mediumRiskRequiresConfirmation = false;
-    }
-  }
+const MARK_READ_CATEGORIES = [
+  ['newsletter', 'Newsletter', 'Boletins e mensagens recorrentes com link de descadastro.'],
+  ['mailing', 'Mailing', 'Listas de divulgação, campanhas e comunicados em massa.'],
+  ['promocao', 'Promoções', 'Ofertas, cupons, lojas e campanhas promocionais.'],
+  ['outro', 'Geral baixo risco', 'E-mails gerais que a IA classificou como sem ação importante.'],
+  ['financeiro', 'Financeiro', 'Use com cuidado: boletos, cobranças e pagamentos.'],
+  ['trabalho', 'Trabalho', 'Use com cuidado: mensagens profissionais sem urgência.'],
+  ['documento', 'Documentos', 'Use com cuidado: contratos, comprovantes e arquivos.']
 ];
 
 const switchGroups = {
@@ -243,7 +122,7 @@ const switchGroups = {
 document.addEventListener('DOMContentLoaded', async () => {
   renderSwitches();
   renderAutonomyGrid();
-  renderExecutionPresetGrid();
+  renderMarkReadCategoryGrid();
   renderHourGrid();
   await loadSettings();
   await loadStatus();
@@ -271,14 +150,14 @@ function renderAutonomyGrid() {
   `).join('');
 }
 
-function renderExecutionPresetGrid() {
-  const container = document.querySelector('#executionPresetGrid');
+function renderMarkReadCategoryGrid() {
+  const container = document.querySelector('#markReadCategoryGrid');
   if (!container) return;
-  container.innerHTML = EXECUTION_PRESETS.map((item) => `
-    <button class="choice-card" data-execution-preset="${escapeHtml(item.id)}">
-      <span class="badge">Execução</span>
-      <strong>${escapeHtml(item.title)}</strong>
-      <small>${escapeHtml(item.description)}</small>
+  container.innerHTML = MARK_READ_CATEGORIES.map(([value, title, description]) => `
+    <button class="choice-card" data-array-path="organizing.markReadCategories" data-array-value="${escapeHtml(value)}">
+      <span class="badge">Marcar lido</span>
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(description)}</small>
     </button>
   `).join('');
 }
@@ -362,7 +241,7 @@ function bind() {
   document.body.addEventListener('click', async (event) => {
     const toggle = event.target.closest('.toggle[data-path]');
     const autonomyCard = event.target.closest('[data-autonomy-level]');
-    const presetCard = event.target.closest('[data-execution-preset]');
+    const arrayToggle = event.target.closest('[data-array-path][data-array-value]');
     const hourButton = event.target.closest('[data-hour-toggle]');
     const hourPreset = event.target.closest('[data-hours-preset]');
     const approvalAction = event.target.closest('[data-approval-id][data-approval-status]');
@@ -384,8 +263,8 @@ function bind() {
       return;
     }
 
-    if (presetCard) {
-      applyExecutionPreset(presetCard.dataset.executionPreset);
+    if (arrayToggle) {
+      toggleArrayValue(arrayToggle.dataset.arrayPath, arrayToggle.dataset.arrayValue);
       await saveSettings();
       await loadStatus();
       return;
@@ -468,12 +347,6 @@ function setAutonomyLevel(level) {
   settings.agent.dryRun = level <= 2 ? true : false;
 }
 
-function applyExecutionPreset(id) {
-  const preset = EXECUTION_PRESETS.find((item) => item.id === id);
-  if (!preset) return;
-  preset.apply(settings);
-}
-
 function toggleAllowedHour(hour) {
   const current = new Set(Array.isArray(settings.automation.allowedHours) ? settings.automation.allowedHours : []);
   if (current.has(hour)) {
@@ -486,6 +359,20 @@ function toggleAllowedHour(hour) {
     current.add(hour);
   }
   settings.automation.allowedHours = [...current].sort((a, b) => a - b);
+}
+
+function toggleArrayValue(path, value) {
+  const current = new Set(Array.isArray(getPath(settings, path)) ? getPath(settings, path) : []);
+  if (current.has(value)) {
+    if (current.size === 1) {
+      alert('Deixe pelo menos uma categoria ligada para evitar configuração vazia.');
+      return;
+    }
+    current.delete(value);
+  } else {
+    current.add(value);
+  }
+  setPath(settings, path, [...current]);
 }
 
 function applyHourPreset(id) {
@@ -507,9 +394,21 @@ function updateForm() {
     if (document.activeElement !== input) input.value = Array.isArray(value) ? value.join(', ') : value ?? '';
   });
   updateAutonomyGrid();
+  updateArrayChoiceGrids();
   updateHourGrid();
   const requiredConfirmations = document.querySelector('#requiredConfirmations');
   if (requiredConfirmations) requiredConfirmations.textContent = JSON.stringify(settings.confirmations?.required || {}, null, 2);
+}
+
+function updateArrayChoiceGrids() {
+  document.querySelectorAll('[data-array-path][data-array-value]').forEach((button) => {
+    const values = Array.isArray(getPath(settings, button.dataset.arrayPath))
+      ? getPath(settings, button.dataset.arrayPath)
+      : [];
+    const selected = values.includes(button.dataset.arrayValue);
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function updateAutonomyGrid() {

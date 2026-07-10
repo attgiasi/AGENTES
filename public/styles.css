@@ -143,6 +143,10 @@ input, select, textarea {
   align-items: stretch;
 }
 
+.choice-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .choice-card {
   display: grid;
   gap: .45rem;

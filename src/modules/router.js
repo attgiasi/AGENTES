@@ -60,6 +60,7 @@ export function buildActionPlan({ email, decision, settings, db }) {
 export function actionsFromDecision(email, decision, settings) {
   const actions = [];
   actions.push({ name: 'applyLabel', labelName: labelForDecision(decision, settings) });
+  actions.push({ name: 'applyLabel', labelName: settings.agent?.processedLabel || settings.labels.processed });
 
   const newsletter = newsletterPlan(email, settings);
   if (newsletter.isNewsletter) {
@@ -71,6 +72,7 @@ export function actionsFromDecision(email, decision, settings) {
 
   if (settings.modules?.autoArchive && decision.acao_recomendada === 'arquivar') actions.push({ name: 'archiveEmail' });
   if (decision.acao_recomendada === 'marcar_lido') actions.push({ name: 'markRead' });
+  if (shouldAutoMarkRead(email, decision, settings)) actions.push({ name: 'markRead' });
   if (decision.acao_recomendada === 'rascunho' || decision.precisa_resposta) {
     actions.push({
       name: 'createDraft',
@@ -89,7 +91,37 @@ export function actionsFromDecision(email, decision, settings) {
   if (decision.acao_recomendada === 'descadastro') actions.push({ name: 'unsubscribeNewsletter' });
   if (decision.acao_recomendada === 'excluir_com_confirmacao') actions.push({ name: 'deleteEmail' });
 
-  return dedupeActions(actions);
+  const safeActions = isUnsafeToMarkRead(decision) || !isCategoryAllowedToMarkRead(decision, settings, newsletter)
+    ? actions.filter((action) => action.name !== 'markRead')
+    : actions;
+  return dedupeActions(safeActions);
+}
+
+function shouldAutoMarkRead(email, decision, settings) {
+  if (!settings.permissions?.markRead) return false;
+  if (!email.labelIds?.includes('UNREAD')) return false;
+  if (!isCategoryAllowedToMarkRead(decision, settings)) return false;
+  if (decision.precisa_resposta) return false;
+  if (decision.criar_lembrete || decision.criar_evento) return false;
+  if (['alta', 'urgente'].includes(decision.prioridade)) return false;
+  if (['pessoal', 'prazo', 'resposta_pendente'].includes(decision.categoria)) return false;
+  return true;
+}
+
+function isCategoryAllowedToMarkRead(decision, settings, newsletter = null) {
+  const categories = Array.isArray(settings.organizing?.markReadCategories)
+    ? settings.organizing.markReadCategories
+    : ['newsletter', 'mailing', 'promocao'];
+  if (newsletter?.isNewsletter && categories.includes('newsletter')) return true;
+  return categories.includes(decision.categoria);
+}
+
+function isUnsafeToMarkRead(decision) {
+  if (decision.precisa_resposta) return true;
+  if (decision.criar_lembrete || decision.criar_evento) return true;
+  if (['alta', 'urgente'].includes(decision.prioridade)) return true;
+  if (['pessoal', 'prazo', 'resposta_pendente'].includes(decision.categoria)) return true;
+  return false;
 }
 
 function labelForDecision(decision, settings) {

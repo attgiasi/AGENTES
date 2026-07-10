@@ -36,6 +36,10 @@ export const DEFAULT_SETTINGS = {
     weekdaysOnly: false,
     note: 'GitHub Actions roda de hora em hora; estas regras decidem se o agente executa ou pula.'
   },
+  organizing: {
+    markReadCategories: ['newsletter', 'mailing', 'promocao'],
+    note: 'Controla em quais categorias o botão Marcar lido pode agir automaticamente.'
+  },
   ai: {
     provider: 'openai',
     fallbackProvider: 'gemini',
