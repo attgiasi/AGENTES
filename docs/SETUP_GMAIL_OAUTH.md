@@ -48,7 +48,26 @@ npm.cmd run auth:gmail
 
 Depois atualize o Secret `GOOGLE_TOKEN_JSON` no GitHub com o novo conteúdo do `token.json`.
 
-## 4. O que nunca subir no GitHub
+## 4. Evitar expiração semanal do token
+
+Se a tela de consentimento OAuth do Google estiver em `Testing`, o refresh token pode expirar em cerca de 7 dias. Quando isso acontece, o GitHub Actions falha em `Validar autenticação Gmail`.
+
+Para reduzir esse problema:
+
+1. Abra o Google Cloud Console.
+2. Vá em `APIs e serviços`.
+3. Vá em `Tela de consentimento OAuth`.
+4. Procure `Publishing status`.
+5. Se estiver `Testing`, publique como `Production`.
+6. Gere um novo `token.json`:
+
+```powershell
+npm.cmd run auth:gmail
+```
+
+7. Atualize o Secret `GOOGLE_TOKEN_JSON` no GitHub.
+
+## 5. O que nunca subir no GitHub
 
 Nunca suba:
 

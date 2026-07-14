@@ -88,6 +88,8 @@ export function explainGoogleAuthError(error) {
     return new Error([
       'Token do Gmail inválido ou expirado (invalid_grant).',
       'Isso normalmente acontece quando o acesso foi revogado, o token ficou velho ou o GOOGLE_TOKEN_JSON não combina com o credentials.json.',
+      'Também acontece quando o app OAuth do Google está em modo Testing: o refresh token pode expirar em cerca de 7 dias.',
+      'Correção recomendada no Google Cloud: OAuth consent screen → Publishing status → Production.',
       'Correção local: rode npm.cmd run auth:gmail, autorize novamente e gere um novo token.json.',
       'Correção no GitHub: copie o novo token.json inteiro e atualize o Secret GOOGLE_TOKEN_JSON.'
     ].join(' '));

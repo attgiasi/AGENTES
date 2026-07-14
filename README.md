@@ -1018,13 +1018,40 @@ npm.cmd run config:validate
 
 Esse erro significa que o token do Gmail ficou inválido, expirou, foi revogado ou não combina mais com a credencial OAuth.
 
+No seu caso, o GitHub está falhando na etapa `Validar autenticação Gmail`. Se o comando local abaixo funciona, mas o GitHub falha, então o Secret `GOOGLE_TOKEN_JSON` no GitHub está desatualizado ou vencido.
+
+Outro ponto importante: se a tela de consentimento OAuth do Google estiver com status `Testing`, o refresh token pode expirar em cerca de 7 dias. Para um agente rodando sozinho no GitHub, o ideal é mudar o app para `Production` no Google Cloud e depois gerar um novo `token.json`.
+
 Para testar:
 
 ```powershell
 npm.cmd run gmail:check
 ```
 
-Se aparecer erro de token inválido, faça assim:
+Se aparecer erro de token inválido no GitHub, faça assim:
+
+1. Primeiro teste localmente:
+
+   ```powershell
+   npm.cmd run gmail:check
+   ```
+
+2. Se localmente aparecer `Gmail conectado com sucesso`, copie o token local atual:
+
+   ```powershell
+   Get-Content -Raw token.json | Set-Clipboard
+   ```
+
+3. No GitHub, vá em:
+
+   `Settings` → `Secrets and variables` → `Actions`
+
+4. Abra o Secret `GOOGLE_TOKEN_JSON`.
+5. Cole o novo conteúdo.
+6. Salve.
+7. Rode o workflow de novo.
+
+Se localmente também falhar, gere um novo token:
 
 1. No PowerShell, dentro da pasta do projeto, rode:
 
@@ -1047,6 +1074,16 @@ Se aparecer erro de token inválido, faça assim:
 6. Cole o novo conteúdo.
 7. Salve.
 8. Rode o workflow de novo.
+
+Para evitar que isso volte a acontecer toda semana:
+
+1. Abra o Google Cloud Console.
+2. Vá em `APIs e serviços`.
+3. Vá em `Tela de consentimento OAuth`.
+4. Procure `Publishing status`.
+5. Se estiver `Testing`, publique como `Production`.
+6. Gere o `token.json` novamente com `npm.cmd run auth:gmail`.
+7. Atualize o Secret `GOOGLE_TOKEN_JSON` no GitHub.
 
 Esse passo é obrigatório quando o Google invalida o refresh token.
 
