@@ -65,3 +65,61 @@ test('arquivamento imediato adiciona archiveEmail para todo email processado', (
   const actions = actionsFromDecision(baseEmail, baseDecision, settings);
   assert.ok(actions.some((action) => action.name === 'archiveEmail'));
 });
+
+test('email importante recebe marcador e etiqueta e fica na entrada por padrão', () => {
+  const settings = normalizeSettings({
+    actions: {
+      archiveEmails: true,
+      archiveImmediately: true,
+      markRead: true,
+      markReadImmediately: true
+    },
+    important: {
+      afterMarkAction: 'keep'
+    }
+  });
+  const actions = actionsFromDecision(baseEmail, {
+    ...baseDecision,
+    categoria: 'pessoal',
+    prioridade: 'urgente',
+    precisa_resposta: true
+  }, settings);
+
+  assert.ok(actions.some((action) => action.name === 'markImportant'));
+  assert.ok(actions.some((action) => action.name === 'applyLabel' && action.labelName === settings.important.labelName));
+  assert.equal(actions.some((action) => action.name === 'archiveEmail'), false);
+  assert.equal(actions.some((action) => action.name === 'markRead'), false);
+});
+
+test('email importante pode ser arquivado depois de marcado', () => {
+  const settings = normalizeSettings({
+    important: {
+      afterMarkAction: 'archive'
+    }
+  });
+  const actions = actionsFromDecision(baseEmail, {
+    ...baseDecision,
+    categoria: 'financeiro',
+    prioridade: 'alta'
+  }, settings);
+
+  assert.ok(actions.some((action) => action.name === 'markImportant'));
+  assert.ok(actions.some((action) => action.name === 'archiveEmail'));
+});
+
+test('email importante pode ir para lixeira depois de marcado', () => {
+  const settings = normalizeSettings({
+    important: {
+      afterMarkAction: 'delete'
+    }
+  });
+  const actions = actionsFromDecision(baseEmail, {
+    ...baseDecision,
+    categoria: 'financeiro',
+    prioridade: 'alta'
+  }, settings);
+
+  assert.ok(actions.some((action) => action.name === 'markImportant'));
+  assert.ok(actions.some((action) => action.name === 'deleteEmail'));
+  assert.equal(actions.some((action) => action.name === 'archiveEmail'), false);
+});

@@ -40,6 +40,18 @@ export const DEFAULT_SETTINGS = {
     markReadCategories: ['newsletter', 'mailing', 'promocao'],
     note: 'Controla em quais categorias o botão Marcar lido pode agir automaticamente.'
   },
+  important: {
+    enabled: true,
+    markAsImportant: true,
+    applyImportantLabel: true,
+    keepUnread: true,
+    protectFromGlobalArchive: true,
+    afterMarkAction: 'keep',
+    priorities: ['alta', 'urgente'],
+    categories: ['pessoal', 'prazo', 'resposta_pendente', 'trabalho', 'financeiro', 'documento', 'contrato', 'cobranca'],
+    labelName: 'AI Agent/Importante',
+    note: 'Detecta e-mails importantes, marca no Gmail e decide se mantém, arquiva ou move para lixeira depois.'
+  },
   execution: {
     archiveImmediately: false,
     markReadImmediately: false,
@@ -52,6 +64,7 @@ export const DEFAULT_SETTINGS = {
     summarizeEmails: true,
     applyLabels: true,
     identifyNewsletter: true,
+    markImportant: true,
     markRead: false,
     markReadImmediately: false,
     markUnread: false,
@@ -114,6 +127,7 @@ export const DEFAULT_SETTINGS = {
     classifyEmails: true,
     summarizeEmails: true,
     applyLabels: true,
+    markImportant: true,
     markRead: false,
     markUnread: false,
     createReminders: true,

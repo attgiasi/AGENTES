@@ -40,6 +40,7 @@
     "summarizeEmails": true,
     "applyLabels": true,
     "identifyNewsletter": true,
+    "markImportant": true,
     "archiveEmails": true,
     "archiveImmediately": true,
     "markRead": false,
@@ -48,6 +49,17 @@
     "sendEmails": false,
     "unsubscribeNewsletter": false
   },
+  "important": {
+    "enabled": true,
+    "markAsImportant": true,
+    "applyImportantLabel": true,
+    "keepUnread": true,
+    "protectFromGlobalArchive": true,
+    "afterMarkAction": "keep",
+    "priorities": ["alta", "urgente"],
+    "categories": ["pessoal", "prazo", "resposta_pendente", "trabalho", "financeiro", "documento", "contrato", "cobranca"],
+    "labelName": "AI Agent/Importante"
+  },
   "newsletter": {
     "enabled": true,
     "archiveAfterDays": 1,
@@ -55,8 +67,6 @@
   },
   "protectedSenders": {
     "enabled": true,
-    "requireConfirmationForArchive": true,
-    "requireConfirmationForDelete": true,
     "emails": [],
     "domains": [],
     "keywords": ["banco", "gov.br", "receita", "justiça", "juridico", "saude"]

@@ -48,3 +48,28 @@ test('marcar lido imediatamente liga automaticamente marcar lido', () => {
   assert.equal(settings.actions.markRead, true);
   assert.equal(settings.execution.markReadImmediately, true);
 });
+
+test('configuração importante normaliza destino único e liga ações dependentes', () => {
+  const archived = normalizeSettings({
+    actions: {
+      archiveEmails: false
+    },
+    important: {
+      afterMarkAction: 'archive'
+    }
+  });
+  assert.equal(archived.important.afterMarkAction, 'archive');
+  assert.equal(archived.actions.markImportant, true);
+  assert.equal(archived.actions.archiveEmails, true);
+
+  const deleted = normalizeSettings({
+    actions: {
+      deleteEmails: false
+    },
+    important: {
+      afterMarkAction: 'delete'
+    }
+  });
+  assert.equal(deleted.important.afterMarkAction, 'delete');
+  assert.equal(deleted.actions.deleteEmails, true);
+});

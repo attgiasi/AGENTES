@@ -38,6 +38,7 @@ export function normalizeSettings(raw) {
   if (rawAgent.autonomyLevel === undefined && hasLegacyAutonomySignals(raw || {})) settings.agent.autonomyLevel = deriveAutonomyLevel(settings);
   settings.agent.autonomyLevel = normalizeAutonomyLevel(settings.agent.autonomyLevel);
   settings.actions = normalizeActions(settings, raw || {});
+  settings.important = normalizeImportantSettings(settings.important || {});
   applyActionDependencies(settings);
   syncLegacySettings(settings);
   settings.agent.maxEmailsPerRun = clampNumber(settings.agent.maxEmailsPerRun, 1, 1000, 100);
@@ -73,6 +74,7 @@ export function validateSettings(settings) {
   if (settings.actions.sendEmails && settings.agent.dryRun) warnings.push('Enviar e-mails está ligado, mas a simulação está ligada.');
   if (settings.actions.deleteEmails) warnings.push('Apagar e-mails está ligado. O agente vai mover para a lixeira quando essa ação for planejada.');
   if (settings.actions.archiveEmails && !settings.actions.archiveImmediately) warnings.push('Arquivar e-mails está ligado, mas "Arquivar tudo imediatamente" está desligado. Assim ele só arquiva quando a IA/regras recomendarem arquivar.');
+  if (settings.important.enabled && settings.important.afterMarkAction === 'delete') warnings.push('E-mails importantes configurados para mover para lixeira depois de marcar.');
   if (!process.env.OPENAI_API_KEY && settings.ai.provider === 'openai' && settings.ai.openai.enabled) {
     warnings.push('OpenAI está selecionado, mas OPENAI_API_KEY não foi configurada. O agente usará regras locais/fallback.');
   }
@@ -83,6 +85,12 @@ export function validateSettings(settings) {
 }
 
 function applyActionDependencies(settings) {
+  if (settings.important?.enabled) {
+    if (settings.important.markAsImportant) settings.actions.markImportant = true;
+    if (settings.important.applyImportantLabel) settings.actions.applyLabels = true;
+    if (settings.important.afterMarkAction === 'archive') settings.actions.archiveEmails = true;
+    if (settings.important.afterMarkAction === 'delete') settings.actions.deleteEmails = true;
+  }
   if (settings.actions.archiveImmediately) settings.actions.archiveEmails = true;
   if (settings.execution.archiveImmediately) {
     settings.actions.archiveImmediately = true;
@@ -93,6 +101,30 @@ function applyActionDependencies(settings) {
     settings.actions.markReadImmediately = true;
     settings.actions.markRead = true;
   }
+}
+
+function normalizeImportantSettings(value = {}) {
+  const allowedActions = new Set(['keep', 'archive', 'delete']);
+  let afterMarkAction = String(value.afterMarkAction || '').trim();
+  if (!afterMarkAction) {
+    if (value.deleteAfterMarking) afterMarkAction = 'delete';
+    else if (value.archiveAfterMarking) afterMarkAction = 'archive';
+    else afterMarkAction = 'keep';
+  }
+  if (!allowedActions.has(afterMarkAction)) afterMarkAction = 'keep';
+
+  return {
+    ...value,
+    enabled: value.enabled !== false,
+    markAsImportant: value.markAsImportant !== false,
+    applyImportantLabel: value.applyImportantLabel !== false,
+    keepUnread: value.keepUnread !== false,
+    protectFromGlobalArchive: value.protectFromGlobalArchive !== false,
+    afterMarkAction,
+    priorities: normalizePriorityList(value.priorities),
+    categories: normalizeImportantCategories(value.categories),
+    labelName: String(value.labelName || 'AI Agent/Importante').trim() || 'AI Agent/Importante'
+  };
 }
 
 function deriveAutonomyLevel(settings) {
@@ -130,6 +162,7 @@ function normalizeActions(settings, raw = {}) {
     summarizeEmails: pick(actions.summarizeEmails, permissions.summarizeEmails, modules.summaries, true),
     applyLabels: pick(actions.applyLabels, permissions.applyLabels, true),
     identifyNewsletter: pick(actions.identifyNewsletter, modules.newsletter, true),
+    markImportant: pick(actions.markImportant, permissions.markImportant, true),
     markRead: pick(actions.markRead, permissions.markRead, false),
     markReadImmediately: pick(actions.markReadImmediately, execution.markReadImmediately, false),
     markUnread: pick(actions.markUnread, permissions.markUnread, false),
@@ -160,6 +193,7 @@ function syncLegacySettings(settings) {
     classifyEmails: settings.actions.classifyEmails,
     summarizeEmails: settings.actions.summarizeEmails,
     applyLabels: settings.actions.applyLabels,
+    markImportant: settings.actions.markImportant,
     markRead: settings.actions.markRead,
     markUnread: settings.actions.markUnread,
     createReminders: settings.actions.createReminders,
@@ -223,6 +257,35 @@ function normalizeMarkReadCategories(value) {
     .filter((item) => allowed.has(item));
   const unique = [...new Set(selected)];
   return unique.length ? unique : ['newsletter', 'mailing', 'promocao'];
+}
+
+function normalizePriorityList(value) {
+  const allowed = new Set(['baixa', 'media', 'alta', 'urgente']);
+  const selected = normalizeStringList(value).filter((item) => allowed.has(item));
+  return selected.length ? selected : ['alta', 'urgente'];
+}
+
+function normalizeImportantCategories(value) {
+  const allowed = new Set([
+    'pessoal',
+    'prazo',
+    'resposta_pendente',
+    'trabalho',
+    'financeiro',
+    'documento',
+    'contrato',
+    'cobranca',
+    'evento'
+  ]);
+  const selected = normalizeStringList(value).filter((item) => allowed.has(item));
+  return selected.length ? selected : ['pessoal', 'prazo', 'resposta_pendente', 'trabalho', 'financeiro', 'documento', 'contrato', 'cobranca'];
+}
+
+function normalizeStringList(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : String(value || '').split(',');
+  return [...new Set(raw.map((item) => String(item).trim()).filter(Boolean))];
 }
 
 function clampNumber(value, min, max, fallback) {

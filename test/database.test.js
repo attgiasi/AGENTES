@@ -16,6 +16,7 @@ test('banco grava configurações, logs e itens Apple', async () => {
 test('dashboard resume ações e sugestões', async () => {
   const db = await openDatabase(':memory:');
   db.recordAction({ emailId: '1', action: 'archiveEmail', risk: 'medio', status: 'executed' });
+  db.recordAction({ emailId: '1', action: 'markImportant', risk: 'baixo', status: 'executed' });
   db.recordAction({ emailId: '2', action: 'deleteEmail', risk: 'alto', status: 'dry-run' });
   db.createApproval({ action: 'unsubscribeNewsletter', risk: 'alto', payload: { emailId: '3' } });
   db.recordNewsletter({
@@ -28,6 +29,7 @@ test('dashboard resume ações e sugestões', async () => {
 
   const summary = db.dashboardSummary();
   assert.equal(summary.emailActions.archived, 1);
+  assert.equal(summary.emailActions.markedImportant, 1);
   assert.equal(summary.totals.suggestions, 2);
   assert.equal(summary.newsletters.senders, 1);
   assert.equal(summary.pendingApprovals.length, 1);

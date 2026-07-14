@@ -16,6 +16,25 @@ const MARK_READ_CATEGORIES = [
   ['documento', 'Documentos', 'Use com cuidado: contratos, comprovantes e arquivos.']
 ];
 
+const IMPORTANT_PRIORITIES = [
+  ['alta', 'Alta', 'Mensagens relevantes, mas não necessariamente urgentes.'],
+  ['urgente', 'Urgente', 'Mensagens que precisam de leitura/ação rápida.'],
+  ['media', 'Média', 'Use se quiser capturar mais mensagens como importantes.'],
+  ['baixa', 'Baixa', 'Use com cuidado: quase tudo pode virar importante.']
+];
+
+const IMPORTANT_CATEGORIES = [
+  ['pessoal', 'Pessoal', 'Mensagens diretamente relacionadas a você.'],
+  ['prazo', 'Prazo', 'E-mails com datas, vencimentos ou urgência.'],
+  ['resposta_pendente', 'Resposta pendente', 'Mensagens que provavelmente exigem retorno.'],
+  ['trabalho', 'Trabalho', 'Assuntos profissionais.'],
+  ['financeiro', 'Financeiro', 'Boletos, cobranças, pagamentos e bancos.'],
+  ['documento', 'Documento', 'Anexos, comprovantes e arquivos importantes.'],
+  ['contrato', 'Contrato', 'Contratos e documentos formais.'],
+  ['cobranca', 'Cobrança', 'Cobranças e contas a pagar.'],
+  ['evento', 'Evento', 'Convites e compromissos com data.']
+];
+
 const switchGroups = {
   coreSwitches: [
     ['agent.enabled', 'Agente ativo', 'Liga ou desliga o agente inteiro.'],
@@ -54,6 +73,7 @@ const switchGroups = {
     ['actions.summarizeEmails', 'Resumir', 'Gera resumos curtos.'],
     ['actions.applyLabels', 'Aplicar etiquetas', 'Organiza com labels.'],
     ['actions.identifyNewsletter', 'Identificar newsletter', 'Detecta mailing e promoções.'],
+    ['actions.markImportant', 'Marcar importante', 'Usa o marcador nativo Importante do Gmail.'],
     ['actions.markRead', 'Marcar lido quando fizer sentido', 'Remove não lido conforme decisão da IA ou newsletter.'],
     ['actions.markReadImmediately', 'Marcar lido imediatamente', 'Marca todo e-mail processado como lido.'],
     ['actions.markUnread', 'Marcar não lido', 'Pode marcar mensagens como não lidas.'],
@@ -81,13 +101,14 @@ const switchGroups = {
     ['newsletter.keepFavoritesInInbox', 'Manter favoritos', 'Não arquiva favoritos.'],
     ['newsletter.autoArchiveTrustedSenders', 'Arquivar confiáveis', 'Arquiva remetentes confiáveis.'],
     ['newsletter.suggestUnsubscribe', 'Sugerir descadastro', 'Mostra descadastro como sugestão.'],
-    ['newsletter.requireConfirmationForUnsubscribe', 'Confirmar descadastro', 'Nunca cancela inscrição sem aprovação.'],
     ['newsletter.neverClickSuspiciousLinks', 'Bloquear links suspeitos', 'Não clica em links encurtados.']
   ],
-  protectedSwitches: [
-    ['protectedSenders.enabled', 'Proteção ligada', 'Protege remetentes importantes.'],
-    ['protectedSenders.requireConfirmationForArchive', 'Confirmar arquivar', 'Exige aprovação para arquivar protegidos.'],
-    ['protectedSenders.requireConfirmationForDelete', 'Confirmar apagar', 'Exige aprovação para apagar protegidos.']
+  importantSwitches: [
+    ['important.enabled', 'Detectar importantes', 'Ativa regras de e-mail importante.'],
+    ['important.markAsImportant', 'Marcar no Gmail', 'Adiciona o marcador nativo Importante.'],
+    ['important.applyImportantLabel', 'Aplicar etiqueta', 'Aplica a etiqueta AI Agent/Importante.'],
+    ['important.keepUnread', 'Manter não lido', 'Não marca como lido antes de você ler.'],
+    ['important.protectFromGlobalArchive', 'Não arquivar sem regra', 'Se o destino for manter, impede arquivamento global automático.']
   ],
   appleSwitches: [
     ['apple.enabled', 'Apple', 'Habilita integração via Atalhos.'],
@@ -107,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSwitches();
   renderAutonomyGrid();
   renderMarkReadCategoryGrid();
+  renderImportantGrids();
   renderHourGrid();
   bindEvents();
   updateForm();
@@ -151,6 +173,17 @@ function safePreset() {
     organizing: {
       markReadCategories: ['newsletter', 'mailing', 'promocao']
     },
+    important: {
+      enabled: true,
+      markAsImportant: true,
+      applyImportantLabel: true,
+      keepUnread: true,
+      protectFromGlobalArchive: true,
+      afterMarkAction: 'keep',
+      priorities: ['alta', 'urgente'],
+      categories: ['pessoal', 'prazo', 'resposta_pendente', 'trabalho', 'financeiro', 'documento', 'contrato', 'cobranca'],
+      labelName: 'AI Agent/Importante'
+    },
     execution: {
       archiveImmediately: false,
       markReadImmediately: false,
@@ -162,6 +195,7 @@ function safePreset() {
       summarizeEmails: true,
       applyLabels: true,
       identifyNewsletter: true,
+      markImportant: true,
       markRead: false,
       markReadImmediately: false,
       markUnread: false,
@@ -262,6 +296,23 @@ function renderMarkReadCategoryGrid() {
   container.innerHTML = MARK_READ_CATEGORIES.map(([value, title, description]) => `
     <button class="choice-card" data-array-path="organizing.markReadCategories" data-array-value="${escapeHtml(value)}">
       <span class="badge">Marcar lido</span>
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(description)}</small>
+    </button>
+  `).join('');
+}
+
+function renderImportantGrids() {
+  renderChoiceGrid('#importantPriorityGrid', IMPORTANT_PRIORITIES, 'important.priorities', 'Prioridade');
+  renderChoiceGrid('#importantCategoryGrid', IMPORTANT_CATEGORIES, 'important.categories', 'Categoria');
+}
+
+function renderChoiceGrid(selector, items, path, badge) {
+  const container = document.querySelector(selector);
+  if (!container) return;
+  container.innerHTML = items.map(([value, title, description]) => `
+    <button class="choice-card" data-array-path="${escapeHtml(path)}" data-array-value="${escapeHtml(value)}">
+      <span class="badge">${escapeHtml(badge)}</span>
       <strong>${escapeHtml(title)}</strong>
       <small>${escapeHtml(description)}</small>
     </button>
@@ -389,8 +440,15 @@ function applyAutoArchivePreset() {
   settings.actions.summarizeEmails = true;
   settings.actions.applyLabels = true;
   settings.actions.identifyNewsletter = true;
+  settings.actions.markImportant = true;
   settings.actions.archiveEmails = true;
   settings.actions.archiveImmediately = true;
+  settings.important.enabled = true;
+  settings.important.markAsImportant = true;
+  settings.important.applyImportantLabel = true;
+  settings.important.keepUnread = true;
+  settings.important.protectFromGlobalArchive = true;
+  settings.important.afterMarkAction = 'keep';
   settings.gmail.useSmartQuery = true;
   settings.gmail.includeInboxOnly = false;
   settings.gmail.unreadOnly = false;

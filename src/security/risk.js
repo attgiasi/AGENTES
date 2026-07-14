@@ -12,6 +12,7 @@ export const ACTIONS = {
   createReminder: { risk: RISK.LOW, action: 'createReminders', description: 'Criar lembrete Apple via Atalhos' },
   createReport: { risk: RISK.LOW, action: 'createReports', description: 'Criar relatório' },
   identifyNewsletter: { risk: RISK.LOW, action: 'identifyNewsletter', description: 'Identificar newsletter' },
+  markImportant: { risk: RISK.LOW, action: 'markImportant', description: 'Marcar como importante' },
   markRead: { risk: RISK.LOW, action: 'markRead', description: 'Marcar como lido' },
   markUnread: { risk: RISK.LOW, action: 'markUnread', description: 'Marcar como não lido' },
 

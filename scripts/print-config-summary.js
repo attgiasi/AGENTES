@@ -29,9 +29,21 @@ const summary = {
     arquivarTudoImediatamente: settings.actions.archiveImmediately,
     marcarTudoComoLidoImediatamente: settings.actions.markReadImmediately
   },
+  importantes: {
+    detectar: settings.important.enabled,
+    marcarNoGmail: settings.important.markAsImportant,
+    aplicarEtiqueta: settings.important.applyImportantLabel,
+    manterNaoLido: settings.important.keepUnread,
+    protegerDoArquivamentoGlobal: settings.important.protectFromGlobalArchive,
+    depoisDeMarcar: settings.important.afterMarkAction,
+    prioridades: settings.important.priorities,
+    categorias: settings.important.categories,
+    etiqueta: settings.important.labelName
+  },
   acoes: {
     lerEmails: settings.actions.readEmails,
     aplicarEtiquetas: settings.actions.applyLabels,
+    marcarImportante: settings.actions.markImportant,
     arquivarEmails: settings.actions.archiveEmails,
     apagarEmails: settings.actions.deleteEmails,
     marcarComoLido: settings.actions.markRead,

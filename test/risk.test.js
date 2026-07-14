@@ -15,6 +15,18 @@ test('ação de baixo risco executa quando autonomia média está ativa', () => 
   assert.equal(result.risk, 'baixo');
 });
 
+test('marcar importante é baixo risco', () => {
+  const settings = normalizeSettings({
+    agent: {
+      autonomyLevel: 2,
+      dryRun: false
+    }
+  });
+  const result = evaluateAction('markImportant', settings);
+  assert.equal(result.allowed, true);
+  assert.equal(result.risk, 'baixo');
+});
+
 test('alto risco fica pendente na autonomia alta', () => {
   const settings = normalizeSettings({
     agent: {

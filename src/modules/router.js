@@ -59,12 +59,21 @@ export function buildActionPlan({ email, decision, settings, db }) {
 
 export function actionsFromDecision(email, decision, settings) {
   const actions = [];
+  const newsletter = newsletterPlan(email, settings);
+  const important = isImportantEmail(email, decision, settings);
+
   if (settings.actions?.applyLabels) {
     actions.push({ name: 'applyLabel', labelName: labelForDecision(decision, settings) });
+    if (important && settings.important?.applyImportantLabel) {
+      actions.push({ name: 'applyLabel', labelName: settings.important.labelName || settings.labels.important });
+    }
     actions.push({ name: 'applyLabel', labelName: settings.agent?.processedLabel || settings.labels.processed });
   }
 
-  const newsletter = newsletterPlan(email, settings);
+  if (important && settings.important?.markAsImportant && settings.actions?.markImportant) {
+    actions.push({ name: 'markImportant', reason: 'E-mail detectado como importante.' });
+  }
+
   if (newsletter.isNewsletter) {
     for (const actionName of newsletter.actions) {
       if (actionName === 'applyLabel') continue;
@@ -72,8 +81,15 @@ export function actionsFromDecision(email, decision, settings) {
     }
   }
 
-  if (settings.actions?.archiveEmails && settings.actions?.archiveImmediately) actions.push({ name: 'archiveEmail', reason: 'Arquivamento imediato ligado.' });
-  if (settings.actions?.archiveEmails && !settings.actions?.archiveImmediately && decision.acao_recomendada === 'arquivar') actions.push({ name: 'archiveEmail' });
+  const importantFollowUp = importantFollowUpAction(settings, important);
+  const keepImportantInInbox = important
+    && settings.important?.protectFromGlobalArchive !== false
+    && importantFollowUp === 'keep';
+
+  if (importantFollowUp === 'archive' && settings.actions?.archiveEmails) actions.push({ name: 'archiveEmail', reason: 'E-mail importante marcado e configurado para arquivar.' });
+  if (importantFollowUp === 'delete' && settings.actions?.deleteEmails) actions.push({ name: 'deleteEmail', reason: 'E-mail importante marcado e configurado para mover à lixeira.' });
+  if (!keepImportantInInbox && settings.actions?.archiveEmails && settings.actions?.archiveImmediately) actions.push({ name: 'archiveEmail', reason: 'Arquivamento imediato ligado.' });
+  if (!keepImportantInInbox && settings.actions?.archiveEmails && !settings.actions?.archiveImmediately && decision.acao_recomendada === 'arquivar') actions.push({ name: 'archiveEmail' });
   if (decision.acao_recomendada === 'marcar_lido') actions.push({ name: 'markRead' });
   if (settings.actions?.markRead && settings.actions?.markReadImmediately && email.labelIds?.includes('UNREAD')) actions.push({ name: 'markRead', reason: 'Marcar lido imediatamente ligado.' });
   if (shouldAutoMarkRead(email, decision, settings)) actions.push({ name: 'markRead' });
@@ -93,12 +109,39 @@ export function actionsFromDecision(email, decision, settings) {
     actions.push({ name: 'createCalendarEvent', payload: buildCalendarPayload(email, decision, settings) });
   }
   if (decision.acao_recomendada === 'descadastro') actions.push({ name: 'unsubscribeNewsletter' });
-  if (decision.acao_recomendada === 'excluir_com_confirmacao') actions.push({ name: 'deleteEmail' });
+  if (decision.acao_recomendada === 'excluir_com_confirmacao' && (!important || importantFollowUp === 'delete')) actions.push({ name: 'deleteEmail' });
 
-  const safeActions = !settings.actions?.markReadImmediately && (isUnsafeToMarkRead(decision) || !isCategoryAllowedToMarkRead(decision, settings, newsletter))
-    ? actions.filter((action) => action.name !== 'markRead')
-    : actions;
+  const mustKeepUnread = important && settings.important?.keepUnread !== false;
+  let safeActions = actions;
+  if (keepImportantInInbox) safeActions = safeActions.filter((action) => action.name !== 'archiveEmail');
+  if (important && importantFollowUp !== 'delete') safeActions = safeActions.filter((action) => !['deleteEmail', 'hardDeleteEmail'].includes(action.name));
+  if (mustKeepUnread || (!settings.actions?.markReadImmediately && (isUnsafeToMarkRead(decision) || !isCategoryAllowedToMarkRead(decision, settings, newsletter)))) {
+    safeActions = safeActions.filter((action) => action.name !== 'markRead');
+  }
   return dedupeActions(safeActions);
+}
+
+export function isImportantEmail(email, decision, settings) {
+  if (!settings.important?.enabled) return false;
+  if (email.labelIds?.includes('IMPORTANT')) return true;
+  const priorities = Array.isArray(settings.important.priorities) ? settings.important.priorities : ['alta', 'urgente'];
+  const categories = Array.isArray(settings.important.categories) ? settings.important.categories : [];
+  if (priorities.includes(decision.prioridade)) return true;
+  if (categories.includes(decision.categoria)) return true;
+  if (decision.precisa_resposta && categories.includes('resposta_pendente')) return true;
+  if ((decision.criar_lembrete || decision.criar_evento) && categories.includes('prazo')) return true;
+  const importanceHeaders = [
+    email.headers?.importance,
+    email.headers?.priority,
+    email.headers?.['x-priority']
+  ].join(' ');
+  return /high|urgent|alta|importante|1/i.test(importanceHeaders);
+}
+
+function importantFollowUpAction(settings, important) {
+  if (!important || !settings.important?.enabled) return 'none';
+  const action = settings.important.afterMarkAction || 'keep';
+  return ['keep', 'archive', 'delete'].includes(action) ? action : 'keep';
 }
 
 function shouldAutoMarkRead(email, decision, settings) {

@@ -7,17 +7,26 @@ export function isPlainObject(value) {
 }
 
 export function mergeDeep(base, override) {
+  if (override === undefined) return cloneValue(base);
   if (Array.isArray(base) || Array.isArray(override)) {
-    return override === undefined ? base : override;
+    return override === undefined ? cloneValue(base) : cloneValue(override);
   }
   if (!isPlainObject(base) || !isPlainObject(override)) {
-    return override === undefined ? base : override;
+    return override === undefined ? cloneValue(base) : cloneValue(override);
   }
-  const output = { ...base };
+  const output = cloneValue(base);
   for (const [key, value] of Object.entries(override || {})) {
     output[key] = mergeDeep(base[key], value);
   }
   return output;
+}
+
+export function cloneValue(value) {
+  if (Array.isArray(value)) return value.map((item) => cloneValue(item));
+  if (isPlainObject(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneValue(item)]));
+  }
+  return value;
 }
 
 export async function ensureDir(dirPath) {
@@ -171,4 +180,3 @@ export function daysBetweenNow(dateLike) {
   if (!Number.isFinite(time)) return Number.NaN;
   return (Date.now() - time) / 86400000;
 }
-

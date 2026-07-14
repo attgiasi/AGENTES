@@ -728,11 +728,23 @@ Exemplo direto para ler os e-mails encontrados e arquivar imediatamente:
     "summarizeEmails": true,
     "applyLabels": true,
     "identifyNewsletter": true,
+    "markImportant": true,
     "archiveEmails": true,
     "archiveImmediately": true,
     "deleteEmails": false,
     "sendEmails": false,
     "unsubscribeNewsletter": false
+  },
+  "important": {
+    "enabled": true,
+    "markAsImportant": true,
+    "applyImportantLabel": true,
+    "keepUnread": true,
+    "protectFromGlobalArchive": true,
+    "afterMarkAction": "keep",
+    "priorities": ["alta", "urgente"],
+    "categories": ["pessoal", "prazo", "resposta_pendente", "trabalho", "financeiro", "documento", "contrato", "cobranca"],
+    "labelName": "AI Agent/Importante"
   },
   "newsletter": {
     "archiveAfterDays": 1,
@@ -740,8 +752,6 @@ Exemplo direto para ler os e-mails encontrados e arquivar imediatamente:
   },
   "protectedSenders": {
     "enabled": true,
-    "requireConfirmationForArchive": true,
-    "requireConfirmationForDelete": true,
     "emails": [],
     "domains": [],
     "keywords": ["banco", "gov.br", "receita", "justiça", "juridico", "saude"]
@@ -755,6 +765,9 @@ O ponto principal é este:
 - `actions.archiveEmails: true` = permite arquivar;
 - `actions.archiveImmediately: true` = arquiva todo e-mail processado;
 - `execution.archiveImmediately: true` = redundância explícita para deixar claro que é imediato;
+- `important.afterMarkAction: "keep"` = importantes ficam marcados e continuam na caixa de entrada para você ler;
+- se quiser arquivar importantes depois de marcar, use `"afterMarkAction": "archive"`;
+- se quiser mover importantes para lixeira depois de marcar, use `"afterMarkAction": "delete"`;
 - `dryRun: false` = não é simulação.
 
 Eu deixei esse exemplo pronto no arquivo:
@@ -919,7 +932,7 @@ Comandos disponíveis:
 
 | Risco | Exemplos | Como controlar |
 |---|---|---|
-| Baixo | ler, resumir, classificar, aplicar etiqueta, criar lembrete, relatório | menu `Ações de baixo risco` |
+| Baixo | ler, resumir, classificar, aplicar etiqueta, marcar importante, criar lembrete, relatório | menu `Ações de baixo risco` |
 | Médio | arquivar, arquivar tudo imediatamente, criar rascunho, criar evento | menu `Ações de médio risco` |
 | Alto | enviar, apagar, descadastrar newsletter, encaminhar, esvaziar lixeira, ações em lote | menu `Ações de alto risco` |
 
@@ -938,12 +951,31 @@ Ele decide tudo usando principalmente:
 - `execution.runSelectedActionsNow`: se ligado, executa as ações na própria execução quando a autonomia permite;
 - `gmail`: caixas/categorias do Gmail, busca inteligente e filtros de leitura;
 - `automation`: horários e frequência de execução;
+- `important`: regras de e-mails importantes, marcador do Gmail, etiqueta e destino depois de marcar;
 - `newsletter`: regras de mailing e promoções;
 - `protectedSenders`: remetentes/domínios que exigem cuidado extra;
 - `apple`: regras de Lembretes e Calendário;
 - `limits`: limites de ações por execução.
 
 Exemplo: se `actions.archiveEmails` estiver desligado, ele não arquiva. Se `actions.archiveImmediately` estiver ligado junto com `actions.archiveEmails`, ele arquiva todo e-mail processado. Se `dryRun` estiver ligado, ele só mostra o que faria.
+
+## E-mails importantes
+
+No painel existe o bloco `E-mails importantes`.
+
+Ele faz três coisas:
+
+1. detecta e-mails importantes por prioridade e categoria;
+2. marca no Gmail com o marcador nativo `Importante` e com a etiqueta `AI Agent/Importante`;
+3. decide o que fazer depois de marcar.
+
+O campo `Depois de marcar como importante` tem três escolhas:
+
+- `Manter na caixa de entrada`: bom para você ler depois;
+- `Arquivar depois de marcar`: tira da entrada, mas mantém salvo no Gmail;
+- `Mover para lixeira depois de marcar`: move para a lixeira.
+
+Por padrão, os importantes ficam não lidos e protegidos contra o arquivamento global automático.
 
 ## Níveis de autonomia
 

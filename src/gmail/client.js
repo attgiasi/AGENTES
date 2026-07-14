@@ -82,6 +82,11 @@ export async function markUnread(gmail, messageId, options = {}) {
   return modifyLabels(gmail, messageId, { addLabelIds: ['UNREAD'] });
 }
 
+export async function markImportant(gmail, messageId, options = {}) {
+  if (options.dryRun) return { dryRun: true };
+  return modifyLabels(gmail, messageId, { addLabelIds: ['IMPORTANT'] });
+}
+
 export async function archiveMessage(gmail, messageId, options = {}) {
   if (options.dryRun) return { dryRun: true };
   return modifyLabels(gmail, messageId, { removeLabelIds: ['INBOX'] });
@@ -244,4 +249,3 @@ function encodeMimeHeader(value) {
   if (/^[\x00-\x7F]*$/.test(text)) return text;
   return `=?UTF-8?B?${Buffer.from(text, 'utf8').toString('base64')}?=`;
 }
-

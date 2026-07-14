@@ -44,6 +44,7 @@
     "summarizeEmails": true,
     "applyLabels": true,
     "identifyNewsletter": true,
+    "markImportant": true,
     "markRead": false,
     "markReadImmediately": false,
     "markUnread": false,
@@ -65,21 +66,29 @@
   "organizing": {
     "markReadCategories": ["newsletter", "mailing", "promocao"]
   },
+  "important": {
+    "enabled": true,
+    "markAsImportant": true,
+    "applyImportantLabel": true,
+    "keepUnread": true,
+    "protectFromGlobalArchive": true,
+    "afterMarkAction": "keep",
+    "priorities": ["alta", "urgente"],
+    "categories": ["pessoal", "prazo", "resposta_pendente", "trabalho", "financeiro", "documento", "contrato", "cobranca"],
+    "labelName": "AI Agent/Importante"
+  },
   "newsletter": {
     "enabled": true,
     "archiveAfterDays": 5,
     "deleteAfterDays": 0,
     "keepFavoritesInInbox": true,
     "suggestUnsubscribe": true,
-    "requireConfirmationForUnsubscribe": true,
     "trustedSenders": [],
     "blockedSenders": [],
     "favoriteSenders": []
   },
   "protectedSenders": {
     "enabled": true,
-    "requireConfirmationForArchive": true,
-    "requireConfirmationForDelete": true,
     "emails": [],
     "domains": [],
     "keywords": ["banco", "gov.br", "receita", "justiça", "juridico", "saude"]

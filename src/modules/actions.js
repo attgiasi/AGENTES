@@ -7,6 +7,7 @@ import {
   getOrCreateLabel,
   labelsByName,
   listLabels,
+  markImportant,
   markRead,
   markUnread,
   trashMessage
@@ -114,6 +115,10 @@ async function executeSingle({ gmail, email, action, db, labels, dryRun }) {
   if (action.name === 'markRead') {
     await markRead(gmail, email.id, { dryRun });
     return { detail: 'Marcado como lido' };
+  }
+  if (action.name === 'markImportant') {
+    await markImportant(gmail, email.id, { dryRun });
+    return { detail: 'Marcado como importante no Gmail' };
   }
   if (action.name === 'markUnread') {
     await markUnread(gmail, email.id, { dryRun });

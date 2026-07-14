@@ -188,6 +188,7 @@ export class AgentDatabase {
         unsubscribed: countAction('unsubscribeNewsletter'),
         unsubscribeSuggestions: pendingApprovals.filter((approval) => approval.action === 'unsubscribeNewsletter').length,
         labeled: countAction('applyLabel') + countAction('identifyNewsletter'),
+        markedImportant: countAction('markImportant'),
         drafts: countAction('createDraft'),
         markedRead: countAction('markRead'),
         reminders: countAction('createReminder'),
@@ -391,6 +392,7 @@ function groupForAction(actionName) {
   if ([
     'applyLabel',
     'identifyNewsletter',
+    'markImportant',
     'markRead',
     'markUnread',
     'createReminder',
@@ -412,6 +414,7 @@ function actionTitle(actionName) {
     forwardEmail: 'Encaminhar e-mail',
     applyLabel: 'Aplicar etiqueta',
     identifyNewsletter: 'Identificar newsletter',
+    markImportant: 'Marcar como importante',
     markRead: 'Marcar como lido',
     markUnread: 'Marcar como não lido',
     createReminder: 'Criar lembrete',
