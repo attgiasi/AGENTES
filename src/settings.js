@@ -38,6 +38,7 @@ export function normalizeSettings(raw) {
   if (rawAgent.autonomyLevel === undefined && hasLegacyAutonomySignals(raw || {})) settings.agent.autonomyLevel = deriveAutonomyLevel(settings);
   settings.agent.autonomyLevel = normalizeAutonomyLevel(settings.agent.autonomyLevel);
   settings.actions = normalizeActions(settings, raw || {});
+  applyActionDependencies(settings);
   syncLegacySettings(settings);
   settings.agent.maxEmailsPerRun = clampNumber(settings.agent.maxEmailsPerRun, 1, 1000, 100);
   settings.gmail.newerThanDays = clampNumber(settings.gmail.newerThanDays, 1, 3650, 30);
@@ -71,7 +72,7 @@ export function validateSettings(settings) {
   if (!settings.actions.readEmails) warnings.push('Ação "Ler e-mails" está desligada; o agente não lerá Gmail.');
   if (settings.actions.sendEmails && settings.agent.dryRun) warnings.push('Enviar e-mails está ligado, mas a simulação está ligada.');
   if (settings.actions.deleteEmails) warnings.push('Apagar e-mails está ligado. O agente vai mover para a lixeira quando essa ação for planejada.');
-  if (settings.actions.archiveImmediately && !settings.actions.archiveEmails) warnings.push('Arquivamento imediato está ligado, mas "Arquivar e-mails" está desligado.');
+  if (settings.actions.archiveEmails && !settings.actions.archiveImmediately) warnings.push('Arquivar e-mails está ligado, mas "Arquivar tudo imediatamente" está desligado. Assim ele só arquiva quando a IA/regras recomendarem arquivar.');
   if (!process.env.OPENAI_API_KEY && settings.ai.provider === 'openai' && settings.ai.openai.enabled) {
     warnings.push('OpenAI está selecionado, mas OPENAI_API_KEY não foi configurada. O agente usará regras locais/fallback.');
   }
@@ -79,6 +80,19 @@ export function validateSettings(settings) {
     warnings.push('Siri/Atalhos exige SHORTCUT_TOKEN, mas ele não foi configurado.');
   }
   return { ok: errors.length === 0, errors, warnings };
+}
+
+function applyActionDependencies(settings) {
+  if (settings.actions.archiveImmediately) settings.actions.archiveEmails = true;
+  if (settings.execution.archiveImmediately) {
+    settings.actions.archiveImmediately = true;
+    settings.actions.archiveEmails = true;
+  }
+  if (settings.actions.markReadImmediately) settings.actions.markRead = true;
+  if (settings.execution.markReadImmediately) {
+    settings.actions.markReadImmediately = true;
+    settings.actions.markRead = true;
+  }
 }
 
 function deriveAutonomyLevel(settings) {

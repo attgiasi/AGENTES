@@ -44,6 +44,11 @@ jobs:
       - name: Validar projeto
         run: npm run check
 
+      - name: Validar configuração do agente
+        env:
+          AGENT_SETTINGS_JSON: ${{ secrets.AGENT_SETTINGS_JSON }}
+        run: npm run config:validate && npm run config:summary
+
       - name: Validar autenticação Gmail
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}

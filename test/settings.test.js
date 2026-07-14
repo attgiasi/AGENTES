@@ -24,3 +24,27 @@ test('limite de e-mails por execução aceita até 1000', () => {
   });
   assert.equal(settings.agent.maxEmailsPerRun, 1000);
 });
+
+test('arquivar imediatamente liga automaticamente arquivar e-mails', () => {
+  const settings = normalizeSettings({
+    actions: {
+      archiveImmediately: true,
+      archiveEmails: false
+    }
+  });
+  assert.equal(settings.actions.archiveImmediately, true);
+  assert.equal(settings.actions.archiveEmails, true);
+  assert.equal(settings.execution.archiveImmediately, true);
+});
+
+test('marcar lido imediatamente liga automaticamente marcar lido', () => {
+  const settings = normalizeSettings({
+    actions: {
+      markReadImmediately: true,
+      markRead: false
+    }
+  });
+  assert.equal(settings.actions.markReadImmediately, true);
+  assert.equal(settings.actions.markRead, true);
+  assert.equal(settings.execution.markReadImmediately, true);
+});

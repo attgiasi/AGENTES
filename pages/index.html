@@ -13,6 +13,7 @@
       <p>Esta página tem a mesma organização do painel local, mas roda direto no GitHub Pages. Configure, copie o JSON e cole no Secret <code>AGENT_SETTINGS_JSON</code>.</p>
       <div class="hero-actions actions">
         <button id="safePreset">Configuração segura</button>
+        <button id="autoArchivePreset">Autonomia total + arquivar tudo</button>
         <button id="copyJson" class="primary">Copiar configuração para GitHub</button>
         <button id="downloadJson">Baixar JSON</button>
       </div>
@@ -90,6 +91,9 @@
       <section class="card wide">
         <h2>4. Ações diretas do agente</h2>
         <p class="hint">Este é o menu único. Ligue o que você quer que o agente faça. O nível de autonomia acima decide se ele executa direto ou pede aprovação.</p>
+        <div class="notice">
+          Quer tirar todos os e-mails encontrados da caixa de entrada? Use o botão <strong>Autonomia total + arquivar tudo</strong> no topo, ou ligue manualmente: Autonomia total, Arquivar e-mails, Arquivar tudo imediatamente e Executar tudo na hora.
+        </div>
         <h3>Ações de baixo risco</h3>
         <div id="actionLowSwitches" class="switch-grid"></div>
         <h3>Ações de médio risco</h3>

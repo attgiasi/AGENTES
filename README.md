@@ -562,15 +562,27 @@ Depois, com calma:
 
 Para arquivar automaticamente de verdade, confirme três coisas no painel:
 
-1. `Simulação / não alterar Gmail` precisa ficar `Desligado`.
-2. `Arquivamento automático` precisa ficar `Ligado`.
-3. `Arquivar emails` precisa ficar `Ligado`.
+1. `Simulação` precisa ficar `Desligado`.
+2. `Nível de autonomia` precisa permitir execução automática.
+3. `Executar tudo na hora` precisa ficar `Ligado`.
+4. `Arquivar e-mails` precisa ficar `Ligado`.
+5. Para arquivar todos os e-mails encontrados, `Arquivar tudo imediatamente` também precisa ficar `Ligado`.
 
-Se `Médio risco confirma` estiver `Ligado`, o agente não arquiva sozinho. Ele cria uma aprovação pendente.
+Atalho fácil: no configurador online existe o botão `Autonomia total + arquivar tudo`. Ele liga as chaves certas para arquivar tudo que for processado.
 
-Nesse caso, vá em `Logs e aprovações`, clique em `Carregar aprovações` e depois clique em `Aprovar e executar`.
+Importante: a partir desta versão, se `Arquivar tudo imediatamente` estiver ligado, o código também liga `Arquivar e-mails` automaticamente. Isso evita configuração quebrada.
 
-Se você quiser que newsletters e promoções sejam arquivadas sem perguntar, deixe `Médio risco confirma` como `Desligado`.
+Para ver um resumo seguro da configuração, sem mostrar chave, token ou credencial, rode:
+
+```powershell
+npm.cmd run config:summary
+```
+
+Se você configurou pelo painel local e quer ler o banco local salvo pelo painel, rode:
+
+```powershell
+npm.cmd run config:summary:db
+```
 
 Evite no começo:
 

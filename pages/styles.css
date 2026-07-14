@@ -94,6 +94,16 @@ h2 { margin-top: 0; }
 h3 { margin: 1.2rem 0 .4rem; }
 .hint { color: var(--muted); line-height: 1.45; }
 
+.notice {
+  border: 1px solid #bfdbfe;
+  border-radius: 1rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+  line-height: 1.45;
+  padding: .85rem 1rem;
+  margin: .75rem 0;
+}
+
 .section-title {
   display: flex;
   align-items: flex-start;

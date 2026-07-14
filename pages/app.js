@@ -346,6 +346,11 @@ function bindEvents() {
     updateForm();
   });
 
+  document.querySelector('#autoArchivePreset').addEventListener('click', () => {
+    applyAutoArchivePreset();
+    updateForm();
+  });
+
   document.querySelector('#copyJson').addEventListener('click', async () => {
     await navigator.clipboard.writeText(exportJson());
     alert('Configuração copiada. Cole no Secret AGENT_SETTINGS_JSON.');
@@ -368,6 +373,34 @@ function setAutonomyLevel(level) {
   settings.agent.paused = false;
   settings.agent.enabled = level > 0;
   settings.agent.dryRun = false;
+}
+
+function applyAutoArchivePreset() {
+  settings.agent.enabled = true;
+  settings.agent.paused = false;
+  settings.agent.emergencyStop = false;
+  settings.agent.dryRun = false;
+  settings.agent.autonomyLevel = 4;
+  settings.agent.maxEmailsPerRun = 1000;
+  settings.execution.runSelectedActionsNow = true;
+  settings.execution.archiveImmediately = true;
+  settings.actions.readEmails = true;
+  settings.actions.classifyEmails = true;
+  settings.actions.summarizeEmails = true;
+  settings.actions.applyLabels = true;
+  settings.actions.identifyNewsletter = true;
+  settings.actions.archiveEmails = true;
+  settings.actions.archiveImmediately = true;
+  settings.gmail.useSmartQuery = true;
+  settings.gmail.includeInboxOnly = false;
+  settings.gmail.unreadOnly = false;
+  settings.gmail.excludeSent = true;
+  settings.gmail.excludeDrafts = true;
+  settings.gmail.excludeSpamTrash = true;
+  settings.automation.enabled = true;
+  settings.automation.manualOnly = false;
+  settings.automation.intervalHours = 1;
+  settings.automation.allowedHours = Array.from({ length: 24 }, (_, hour) => hour);
 }
 
 function toggleAllowedHour(hour) {

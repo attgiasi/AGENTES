@@ -14,6 +14,8 @@
     "gmail:check": "node --experimental-sqlite --no-warnings scripts/check-gmail-auth.js",
     "settings:export": "node --experimental-sqlite --no-warnings scripts/export-settings.js",
     "config:validate": "node --experimental-sqlite --no-warnings scripts/validate-config.js",
+    "config:summary": "node --experimental-sqlite --no-warnings scripts/print-config-summary.js",
+    "config:summary:db": "node --experimental-sqlite --no-warnings scripts/print-config-summary.js --db",
     "check": "node --experimental-sqlite --no-warnings scripts/check-syntax.js && node --experimental-sqlite --no-warnings --test"
   },
   "dependencies": {
