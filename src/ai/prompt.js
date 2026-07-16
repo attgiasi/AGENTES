@@ -24,7 +24,13 @@ ${JSON.stringify({
   actions: settings.actions,
   execution: settings.execution,
   newsletter: settings.newsletter,
-  apple: settings.apple
+  apple: settings.apple,
+  perfilPessoal: settings.personalProfile || {},
+  regrasPersonalizadas: (settings.customRules || []).map((rule) => ({
+    name: rule.name,
+    conditions: rule.conditions,
+    actions: rule.actions
+  }))
 }, null, 2)}
 
 Email:

@@ -4,7 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#07111f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Inbox AI — Gmail Agent</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/icon.svg">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
@@ -26,13 +31,34 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.58 15 1.7 1.7 0 0 0 3 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.58 1.7 1.7 0 0 0 10 3h4v.08A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.42 9 1.7 1.7 0 0 0 21 10v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
             <span>Configurações</span>
           </button>
+          <button class="nav-link" data-view-link="decisions">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V7l-8-4Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>
+            <span>Decisões da IA</span><span class="nav-count" id="decisionNavCount">0</span>
+          </button>
+          <button class="nav-link" data-view-link="rules">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M5 8h10l4 4-4 4H5"/></svg>
+            <span>Regras</span>
+          </button>
+          <button class="nav-link" data-view-link="history">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6M12 7v5l3 2"/></svg>
+            <span>Histórico</span>
+          </button>
+          <button class="nav-link" data-view-link="insights">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+            <span>Relatórios</span>
+          </button>
+          <button class="nav-link" data-view-link="profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span>Perfil inteligente</span>
+          </button>
         </nav>
 
         <div class="sidebar-footer">
-          <div class="environment-card">
+          <button class="environment-card" id="backendStatusButton">
             <span class="live-dot"></span>
             <span><strong id="environmentLabel">Carregando</strong><small id="environmentDetail">Preparando painel</small></span>
-          </div>
+          </button>
+          <button class="install-app is-hidden" id="installApp">Instalar aplicativo</button>
           <span class="version">Inbox AI · 2.0</span>
         </div>
       </aside>
@@ -102,6 +128,81 @@
                 <button class="text-button" data-view-link="settings">Abrir configurações <span>→</span></button>
               </article>
             </div>
+          </section>
+
+          <section class="view-panel" data-view-panel="decisions" hidden>
+            <div class="product-page-heading">
+              <div><span class="section-eyebrow">CENTRAL DE DECISÕES</span><h2>Recomendações da IA</h2><p>Veja o contexto e decida o que deve ser executado.</p></div>
+              <button class="button secondary" data-refresh="decisions">Atualizar</button>
+            </div>
+            <div class="metric-grid decision-metrics" id="decisionMetrics"></div>
+            <div class="decision-groups" id="decisionsList"></div>
+          </section>
+
+          <section class="view-panel" data-view-panel="rules" hidden>
+            <div class="product-page-heading">
+              <div><span class="section-eyebrow">AUTOMAÇÃO PERSONALIZADA</span><h2>Regras inteligentes</h2><p>Crie regras no formato “se acontecer isto, faça aquilo”.</p></div>
+            </div>
+            <div class="rules-layout">
+              <form class="surface rule-builder" id="ruleForm">
+                <div class="card-heading"><div><span class="section-eyebrow">NOVA REGRA</span><h3>Quando um e-mail chegar</h3></div></div>
+                <label class="field"><span>Nome da regra</span><input name="name" required placeholder="Ex.: Arquivar notificações da loja"></label>
+                <div class="field-grid two-columns">
+                  <label class="field"><span>Remetente contém</span><input name="senderIncludes" placeholder="newsletter@empresa.com"></label>
+                  <label class="field"><span>Domínio</span><input name="domain" placeholder="empresa.com"></label>
+                  <label class="field"><span>Assunto contém</span><input name="subjectIncludes" placeholder="promoção"></label>
+                  <label class="field"><span>Conteúdo contém</span><input name="bodyIncludes" placeholder="cupom"></label>
+                </div>
+                <span class="rule-arrow">ENTÃO</span>
+                <div class="field-grid two-columns">
+                  <label class="field"><span>Categoria</span><select name="category"><option value="outro">Geral</option><option value="pessoal">Pessoal</option><option value="trabalho">Trabalho</option><option value="financeiro">Financeiro</option><option value="newsletter">Newsletter</option><option value="promocao">Promoção</option><option value="documento">Documento</option><option value="prazo">Prazo</option></select></label>
+                  <label class="field"><span>Prioridade</span><select name="priority"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+                  <label class="field"><span>Ação recomendada</span><select name="recommendedAction"><option value="label">Aplicar etiqueta</option><option value="arquivar">Arquivar</option><option value="marcar_lido">Marcar como lido</option><option value="rascunho">Preparar resposta</option><option value="lembrete">Criar lembrete</option><option value="evento">Criar evento</option><option value="descadastro">Fazer descadastro</option><option value="excluir_com_confirmacao">Mover para lixeira</option></select></label>
+                  <label class="field"><span>Etiqueta personalizada</span><input name="labelName" placeholder="AI Agent/Minha regra"></label>
+                </div>
+                <button class="button primary large" type="submit">Criar regra</button>
+              </form>
+              <div class="surface rules-list-panel">
+                <div class="card-heading"><div><span class="section-eyebrow">REGRAS ATIVAS</span><h3>Suas automações</h3></div><span class="soft-badge" id="rulesCount">0 regras</span></div>
+                <div class="rules-list" id="rulesList"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="view-panel" data-view-panel="history" hidden>
+            <div class="product-page-heading">
+              <div><span class="section-eyebrow">HISTÓRICO REVERSÍVEL</span><h2>Tudo o que o agente fez</h2><p>Consulte cada ação e desfaça quando houver uma reversão disponível.</p></div>
+              <button class="button secondary" data-refresh="history">Atualizar</button>
+            </div>
+            <div class="surface history-panel">
+              <div class="history-toolbar"><div class="history-filters" id="historyFilters"><button class="is-selected" data-history-filter="all">Tudo</button><button data-history-filter="archiveEmail">Arquivados</button><button data-history-filter="markRead">Lidos</button><button data-history-filter="deleteEmail">Lixeira</button><button data-history-filter="applyLabel">Etiquetas</button></div><span id="historyCount">0 ações</span></div>
+              <div class="history-list" id="historyList"></div>
+            </div>
+          </section>
+
+          <section class="view-panel" data-view-panel="insights" hidden>
+            <div class="product-page-heading">
+              <div><span class="section-eyebrow">RELATÓRIOS E SAÚDE</span><h2>Desempenho do agente</h2><p>Acompanhe volume, resultados e funcionamento da automação.</p></div>
+              <button class="button secondary" data-refresh="insights">Atualizar</button>
+            </div>
+            <div class="insights-grid">
+              <article class="surface trend-panel"><div class="card-heading"><div><span class="section-eyebrow">ÚLTIMOS 14 DIAS</span><h3>Volume processado</h3></div></div><div class="trend-chart" id="trendChart"></div></article>
+              <article class="surface top-actions-panel"><div class="card-heading"><div><span class="section-eyebrow">DISTRIBUIÇÃO</span><h3>Ações mais usadas</h3></div></div><div class="activity-bars" id="topActionsChart"></div></article>
+            </div>
+            <div class="section-heading"><div><span class="section-eyebrow">MONITORAMENTO</span><h2>Status dos serviços</h2></div></div>
+            <div class="monitor-grid" id="monitorGrid"></div>
+          </section>
+
+          <section class="view-panel" data-view-panel="profile" hidden>
+            <div class="product-page-heading">
+              <div><span class="section-eyebrow">MEMÓRIA PESSOAL</span><h2>Perfil inteligente</h2><p>Ensine ao agente quem e o que merece mais atenção.</p></div>
+              <span class="save-indicator" id="profileSaveIndicator"><span></span>Perfil pronto</span>
+            </div>
+            <form class="profile-grid" id="profileForm">
+              <section class="surface profile-card"><div class="profile-icon">★</div><h3>Pessoas e assuntos</h3><label class="field"><span>Remetentes VIP</span><input name="vipSenders" data-kind="csv" placeholder="pessoa@empresa.com"></label><label class="field"><span>Palavras importantes</span><input name="importantKeywords" data-kind="csv" placeholder="urgente, contrato, família"></label><label class="field"><span>Domínios de trabalho</span><input name="workDomains" data-kind="csv" placeholder="minhaempresa.com"></label></section>
+              <section class="surface profile-card"><div class="profile-icon">✦</div><h3>Comunicação</h3><label class="field"><span>Tom preferido</span><select name="preferredTone"><option value="cordial">Cordial</option><option value="direto">Direto</option><option value="formal">Formal</option><option value="amigavel">Amigável</option></select></label><label class="field"><span>Assinatura</span><textarea name="signature" rows="4" placeholder="Seu nome e assinatura"></textarea></label><label class="field"><span>Observações para a IA</span><textarea name="notes" rows="3" placeholder="Preferências adicionais"></textarea></label></section>
+              <section class="surface profile-card"><div class="profile-icon">◷</div><h3>Rotina</h3><label class="field"><span>Horário de trabalho</span><input name="workHours" placeholder="08:00-18:00"></label><label class="field"><span>Antecedência de lembretes</span><div class="input-suffix"><input type="number" name="reminderLeadMinutes" min="0" max="10080"><span>min</span></div></label><label class="field"><span>Newsletters favoritas</span><input name="favoriteNewsletters" data-kind="csv" placeholder="newsletter@empresa.com"></label></section>
+            </form>
           </section>
 
           <section class="view-panel" data-view-panel="settings" hidden>
@@ -240,6 +341,18 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-icon">✓</span><span id="toastMessage">Concluído</span></div>
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <dialog class="backend-dialog" id="backendDialog">
+      <form method="dialog" id="backendForm">
+        <button class="dialog-close" value="cancel" aria-label="Fechar">×</button>
+        <span class="brand-mark dialog-brand" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 6.5 12 12l7.5-5.5M5 18h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z"/></svg></span>
+        <span class="section-eyebrow">BACKEND ONLINE</span>
+        <h2>Conectar ao Inbox AI Cloud</h2>
+        <p>Informe o endereço do Worker e o código administrativo criado na Cloudflare.</p>
+        <label class="field"><span>URL do backend</span><input name="backendUrl" type="url" placeholder="https://inbox-ai-backend.seunome.workers.dev" required></label>
+        <label class="field"><span>Código de acesso</span><input name="backendToken" type="password" autocomplete="current-password" required></label>
+        <div class="dialog-actions"><button class="button secondary" id="disconnectBackend" type="button">Desconectar</button><button class="button primary" value="default" type="submit">Conectar</button></div>
+      </form>
+    </dialog>
     <script src="./app.js"></script>
   </body>
 </html>

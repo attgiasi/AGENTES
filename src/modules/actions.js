@@ -2,15 +2,20 @@ import {
   applyLabel,
   archiveMessage,
   createDraft,
+  deleteDraft,
   deleteMessage,
   getMessage,
   getOrCreateLabel,
   labelsByName,
   listLabels,
   markImportant,
+  markNotImportant,
   markRead,
   markUnread,
-  trashMessage
+  removeLabel,
+  restoreToInbox,
+  trashMessage,
+  untrashMessage
 } from '../gmail/client.js';
 import { unsubscribeHint } from './newsletter.js';
 
@@ -105,12 +110,55 @@ export async function executeApprovedAction({ gmail, approval, settings, db }) {
   };
 }
 
+export async function executeRequestedAction({ gmail, emailId, action, settings, db }) {
+  if (!emailId || !action?.name) throw new Error('Comando sem email ou ação válida.');
+  const email = await getMessage(gmail, emailId);
+  const labels = labelsByName(await listLabels(gmail));
+  const normalizedAction = { ...action, status: 'ready', risk: action.risk || 'baixo', reason: action.reason || 'Comando aprovado no painel online.' };
+  const result = await executeSingle({ gmail, email, action: normalizedAction, settings, db, labels, dryRun: Boolean(settings.agent.dryRun) });
+  db?.recordAction({ emailId, action: action.name, risk: normalizedAction.risk, status: settings.agent.dryRun ? 'dry-run' : 'executed', data: result });
+  return { emailId, action: action.name, status: settings.agent.dryRun ? 'dry-run' : 'executed', ...result };
+}
+
+export async function undoExecutedAction({ gmail, event, settings, db }) {
+  if (!event?.emailId || !event?.action) throw new Error('Histórico sem dados suficientes para desfazer.');
+  const dryRun = Boolean(settings.agent.dryRun);
+  const metadata = event.metadata || {};
+  let detail;
+  if (event.action === 'archiveEmail') {
+    await restoreToInbox(gmail, event.emailId, { dryRun });
+    detail = 'E-mail devolvido para a caixa de entrada.';
+  } else if (event.action === 'deleteEmail') {
+    await untrashMessage(gmail, event.emailId, { dryRun });
+    detail = 'E-mail restaurado da lixeira.';
+  } else if (event.action === 'markRead') {
+    await markUnread(gmail, event.emailId, { dryRun });
+    detail = 'E-mail devolvido para não lido.';
+  } else if (event.action === 'markUnread') {
+    await markRead(gmail, event.emailId, { dryRun });
+    detail = 'E-mail marcado novamente como lido.';
+  } else if (event.action === 'markImportant') {
+    await markNotImportant(gmail, event.emailId, { dryRun });
+    detail = 'Marcador importante removido.';
+  } else if (['applyLabel', 'identifyNewsletter'].includes(event.action) && metadata.labelId) {
+    await removeLabel(gmail, event.emailId, metadata.labelId, { dryRun });
+    detail = `Etiqueta removida: ${metadata.labelName || metadata.labelId}.`;
+  } else if (event.action === 'createDraft' && metadata.draftId) {
+    await deleteDraft(gmail, metadata.draftId, { dryRun });
+    detail = 'Rascunho removido.';
+  } else {
+    throw new Error('Esta ação não possui uma reversão disponível.');
+  }
+  db?.recordAction({ emailId: event.emailId, action: `undo:${event.action}`, risk: 'baixo', status: dryRun ? 'dry-run' : 'executed', data: { detail, originalEventId: event.eventId || event.id } });
+  return { ok: true, eventId: event.eventId || event.id, emailId: event.emailId, action: event.action, detail, dryRun };
+}
+
 async function executeSingle({ gmail, email, action, db, labels, dryRun }) {
   if (action.name === 'applyLabel' || action.name === 'identifyNewsletter') {
     const labelName = action.labelName || 'AI Agent/Geral';
     const label = await resolveLabel(gmail, labelName, labels, dryRun);
     await applyLabel(gmail, email.id, label.id, { dryRun });
-    return { detail: `Etiqueta aplicada: ${label.name}` };
+    return { detail: `Etiqueta aplicada: ${label.name}`, labelId: label.id, labelName: label.name };
   }
   if (action.name === 'markRead') {
     await markRead(gmail, email.id, { dryRun });
@@ -129,8 +177,8 @@ async function executeSingle({ gmail, email, action, db, labels, dryRun }) {
     return { detail: 'Arquivado/removido da caixa de entrada' };
   }
   if (action.name === 'createDraft') {
-    await createDraft(gmail, email, action.draft, { dryRun });
-    return { detail: 'Rascunho criado' };
+    const draft = await createDraft(gmail, email, action.draft, { dryRun });
+    return { detail: 'Rascunho criado', draftId: draft?.id, draft: action.draft };
   }
   if (action.name === 'createReminder') {
     const item = db?.createAppleItem({ type: 'reminder', sourceEmailId: email.id, payload: action.payload });

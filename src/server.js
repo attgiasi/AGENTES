@@ -7,7 +7,7 @@ import { loadSettings, saveSettings, validateSettings } from './settings.js';
 import { runAgent } from './agent.js';
 import { handleSiriCommand } from './siri/commands.js';
 import { getGmailClient, getProfile } from './gmail/auth.js';
-import { executeApprovedAction } from './modules/actions.js';
+import { executeApprovedAction, undoExecutedAction } from './modules/actions.js';
 
 dotenv.config({ quiet: true });
 
@@ -52,6 +52,53 @@ app.get('/api/dashboard', (req, res) => {
 app.get('/api/suggestions', (req, res) => {
   res.json(db.suggestionsSummary());
 });
+
+app.get('/api/history', (req, res) => {
+  const items = db.listActions(Math.min(500, Number(req.query.limit || 100))).map((item) => ({
+    id: item.id,
+    emailId: item.email_id,
+    action: item.action,
+    status: item.status,
+    detail: item.data?.detail || item.data?.reason || item.data?.error || '',
+    reversible: item.status === 'executed' && ['archiveEmail', 'deleteEmail', 'markRead', 'markUnread', 'markImportant', 'applyLabel', 'identifyNewsletter', 'createDraft'].includes(item.action),
+    reversedAt: item.reversed_at,
+    metadata: item.data,
+    createdAt: item.created_at
+  }));
+  res.json({ ok: true, items });
+});
+
+app.post('/api/history/:id/undo', async (req, res) => {
+  try {
+    const action = db.getAction(req.params.id);
+    if (!action) return res.status(404).json({ ok: false, error: 'Ação não encontrada.' });
+    const settings = await loadSettings(db);
+    const gmail = await getGmailClient();
+    const result = await undoExecutedAction({
+      gmail,
+      event: { id: action.id, eventId: action.id, emailId: action.email_id, action: action.action, metadata: action.data },
+      settings,
+      db
+    });
+    db.markActionReversed(action.id);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get('/api/rules', (req, res) => res.json(db.listRules()));
+app.post('/api/rules', (req, res) => res.status(201).json({ ok: true, rule: db.upsertRule(req.body) }));
+app.put('/api/rules/:id', (req, res) => res.json({ ok: true, rule: db.upsertRule({ ...req.body, id: req.params.id }) }));
+app.delete('/api/rules/:id', (req, res) => {
+  db.deleteRule(req.params.id);
+  res.json({ ok: true, id: req.params.id });
+});
+
+app.get('/api/profile', (req, res) => res.json({ ok: true, profile: db.getPersonalProfile() }));
+app.put('/api/profile', (req, res) => res.json({ ok: true, profile: db.savePersonalProfile(req.body || {}) }));
+app.get('/api/monitoring', (req, res) => res.json(db.monitoringSummary()));
+app.get('/api/runs', (req, res) => res.json({ ok: true, items: db.listRuns(Math.min(200, Number(req.query.limit || 50))) }));
 
 app.put('/api/settings', async (req, res) => {
   const settings = await loadSettings(db);

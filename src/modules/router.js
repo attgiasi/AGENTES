@@ -172,6 +172,7 @@ function isUnsafeToMarkRead(decision) {
 }
 
 function labelForDecision(decision, settings) {
+  if (decision.customLabel) return decision.customLabel;
   const map = {
     newsletter: settings.labels.newsletter,
     mailing: settings.labels.mailing,

@@ -1,0 +1,19 @@
+name = "inbox-ai-backend"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[vars]
+FRONTEND_ORIGIN = "https://attgiasi.github.io"
+GITHUB_REPO = "attgiasi/AGENTES"
+GITHUB_WORKFLOW = "gmail-apple-agent.yml"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inbox-ai"
+database_id = "COLE_AQUI_O_DATABASE_ID"
+
+# Cadastre estes valores com `npx wrangler secret put NOME`:
+# ADMIN_TOKEN
+# INGEST_TOKEN
+# GITHUB_DISPATCH_TOKEN
+

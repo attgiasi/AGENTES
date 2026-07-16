@@ -1,0 +1,13 @@
+name = "inbox-ai-backend"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[vars]
+FRONTEND_ORIGIN = "https://attgiasi.github.io"
+GITHUB_REPO = "attgiasi/AGENTES"
+GITHUB_WORKFLOW = "gmail-apple-agent.yml"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inbox-ai"
+database_id = "0631730e-adbe-4ad3-b0f6-826ca34fe926"

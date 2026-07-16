@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'inbox-ai-settings-v2';
+const CLOUD_URL_KEY = 'inbox-ai-cloud-url';
+const CLOUD_TOKEN_KEY = 'inbox-ai-cloud-token';
 
 const AUTONOMY_LEVELS = [
   { level: 0, title: 'Desligado', description: 'O agente fica pausado.' },
@@ -78,9 +80,18 @@ const IMPORTANT_CATEGORIES = [
 
 let settings = createDefaultSettings();
 let backendConnected = false;
+let cloud = { url: '', token: '', connected: false };
 let statusData = null;
 let dashboardData = emptyDashboard();
+let suggestionsData = [];
+let rulesData = [];
+let historyData = [];
+let profileData = createDefaultProfile();
+let monitoringData = { checks: [] };
+let historyFilter = 'all';
+let deferredInstallPrompt = null;
 let saveTimer = null;
+let profileSaveTimer = null;
 let toastTimer = null;
 
 document.addEventListener('DOMContentLoaded', initialize);
@@ -89,11 +100,14 @@ async function initialize() {
   renderStaticControls();
   bindEvents();
   populateIntervalOptions();
+  registerPwa();
   await loadInitialSettings();
+  await restoreCloudConnection();
+  if (cloud.connected) await loadCloudSettings();
   renderAll();
-  await Promise.all([loadStatus(), loadDashboard()]);
-  renderDashboard();
-  setView(location.hash === '#configuracoes' ? 'settings' : 'overview', false);
+  await loadProductData();
+  renderProductData();
+  setView(viewFromHash(location.hash), false);
 }
 
 function renderStaticControls() {
@@ -142,6 +156,38 @@ function bindEvents() {
     const arrayButton = event.target.closest('[data-array-path][data-array-value]');
     const hourButton = event.target.closest('[data-hour]');
     const hourPreset = event.target.closest('[data-hours-preset]');
+    const refreshButton = event.target.closest('[data-refresh]');
+    const suggestionButton = event.target.closest('[data-suggestion-decision]');
+    const ruleToggle = event.target.closest('[data-rule-toggle]');
+    const ruleDelete = event.target.closest('[data-rule-delete]');
+    const historyFilterButton = event.target.closest('[data-history-filter]');
+    const undoButton = event.target.closest('[data-history-undo]');
+
+    if (refreshButton) {
+      await refreshProductView(refreshButton.dataset.refresh);
+      return;
+    }
+    if (suggestionButton) {
+      await decideSuggestion(suggestionButton.dataset.suggestionId, suggestionButton.dataset.suggestionDecision, suggestionButton.dataset.suggestionSource);
+      return;
+    }
+    if (ruleToggle) {
+      await toggleRule(ruleToggle.dataset.ruleToggle);
+      return;
+    }
+    if (ruleDelete) {
+      await deleteRule(ruleDelete.dataset.ruleDelete);
+      return;
+    }
+    if (historyFilterButton) {
+      historyFilter = historyFilterButton.dataset.historyFilter;
+      renderHistory();
+      return;
+    }
+    if (undoButton) {
+      await undoHistoryItem(undoButton.dataset.historyUndo);
+      return;
+    }
 
     if (viewLink) {
       event.preventDefault();
@@ -177,6 +223,7 @@ function bindEvents() {
     if (hourPreset) {
       applyHourPreset(hourPreset.dataset.hoursPreset);
       await persistAndRender();
+      return;
     }
   });
 
@@ -198,9 +245,16 @@ function bindEvents() {
   document.querySelector('#copySettings').addEventListener('click', copySettings);
   document.querySelector('#copySettingsBottom').addEventListener('click', copySettings);
   document.querySelector('#runNow').addEventListener('click', runAgentNow);
+  document.querySelector('#backendStatusButton').addEventListener('click', openBackendDialog);
+  document.querySelector('#disconnectBackend').addEventListener('click', disconnectCloudBackend);
+  document.querySelector('#backendForm').addEventListener('submit', connectCloudBackend);
+  document.querySelector('#ruleForm').addEventListener('submit', createRuleFromForm);
+  document.querySelector('#profileForm').addEventListener('input', scheduleProfileSave);
+  document.querySelector('#profileForm').addEventListener('change', scheduleProfileSave);
+  document.querySelector('#installApp').addEventListener('click', installPwa);
   document.querySelector('#mobileMenu').addEventListener('click', openSidebar);
   document.querySelector('#sidebarBackdrop').addEventListener('click', closeSidebar);
-  window.addEventListener('hashchange', () => setView(location.hash === '#configuracoes' ? 'settings' : 'overview', false));
+  window.addEventListener('hashchange', () => setView(viewFromHash(location.hash), false));
 }
 
 async function loadInitialSettings() {
@@ -217,13 +271,13 @@ async function loadInitialSettings() {
 }
 
 async function loadStatus() {
-  if (!backendConnected) {
+  if (!backendConnected && !cloud.connected) {
     statusData = null;
     updateEnvironment();
     return;
   }
   try {
-    statusData = await api('/api/status');
+    statusData = cloud.connected ? await cloudApi('/api/status') : await api('/api/status');
   } catch {
     statusData = null;
   }
@@ -231,15 +285,385 @@ async function loadStatus() {
 }
 
 async function loadDashboard() {
-  if (!backendConnected) {
+  if (!backendConnected && !cloud.connected) {
     dashboardData = emptyDashboard();
     return;
   }
   try {
-    dashboardData = await api('/api/dashboard');
+    dashboardData = cloud.connected ? await cloudApi('/api/dashboard') : await api('/api/dashboard');
   } catch {
     dashboardData = emptyDashboard();
   }
+}
+
+async function restoreCloudConnection() {
+  cloud.url = String(localStorage.getItem(CLOUD_URL_KEY) || '').replace(/\/+$/, '');
+  cloud.token = sessionStorage.getItem(CLOUD_TOKEN_KEY) || '';
+  if (!cloud.url || !cloud.token) {
+    cloud.connected = false;
+    updateEnvironment();
+    return;
+  }
+  try {
+    statusData = await cloudApi('/api/status', {}, 7000);
+    cloud.connected = true;
+  } catch {
+    cloud.connected = false;
+    sessionStorage.removeItem(CLOUD_TOKEN_KEY);
+  }
+  updateEnvironment();
+}
+
+async function loadCloudSettings() {
+  try {
+    const response = await cloudApi('/api/settings');
+    if (response.settings) settings = normalizeUiSettings(deepMerge(createDefaultSettings(), response.settings));
+  } catch (error) {
+    showToast(error.message || 'Não foi possível carregar a configuração da nuvem.');
+  }
+}
+
+async function loadProductData() {
+  await Promise.all([loadStatus(), loadDashboard()]);
+  if (!cloud.connected && !backendConnected) {
+    suggestionsData = [];
+    rulesData = [];
+    historyData = [];
+    monitoringData = { checks: [] };
+    return;
+  }
+  const requests = await Promise.allSettled([
+    productApi('/api/suggestions'),
+    productApi('/api/rules'),
+    productApi('/api/history?limit=200'),
+    productApi('/api/profile'),
+    productApi('/api/monitoring')
+  ]);
+  if (requests[0].status === 'fulfilled') suggestionsData = normalizeSuggestions(requests[0].value);
+  if (requests[1].status === 'fulfilled') rulesData = Array.isArray(requests[1].value) ? requests[1].value : requests[1].value.items || [];
+  if (requests[2].status === 'fulfilled') historyData = requests[2].value.items || [];
+  if (requests[3].status === 'fulfilled') profileData = deepMerge(createDefaultProfile(), requests[3].value.profile || requests[3].value);
+  if (requests[4].status === 'fulfilled') monitoringData = requests[4].value || { checks: [] };
+}
+
+function renderProductData() {
+  renderDashboard();
+  renderDecisions();
+  renderRules();
+  renderHistory();
+  renderInsights();
+  renderProfile();
+  updateEnvironment();
+}
+
+async function refreshProductView(view) {
+  const button = document.querySelector(`[data-refresh="${view}"]`);
+  if (button) button.disabled = true;
+  try {
+    await loadProductData();
+    renderProductData();
+    showToast('Dados atualizados.');
+  } catch (error) {
+    showToast(error.message || 'Não foi possível atualizar os dados.');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function normalizeSuggestions(payload) {
+  if (Array.isArray(payload?.items)) return payload.items.slice(0, 300);
+  if (!payload?.groups) return [];
+  return Object.entries(payload.groups).flatMap(([type, group]) => (group.items || []).map((item) => ({ ...item, type, groupTitle: group.title }))).slice(0, 300);
+}
+
+function renderDecisions() {
+  const pending = suggestionsData.filter((item) => ['pending', 'dry-run', 'blocked'].includes(item.status));
+  const counts = ['archive', 'delete', 'send', 'unsubscribe'].map((type) => pending.filter((item) => item.type === type).length);
+  const metrics = [
+    metric('Para arquivar', counts[0], 'archive', '#6758ee', '#eeecff'),
+    metric('Para apagar', counts[1], 'trash', '#f04438', '#fff0ef'),
+    metric('Mensagens', counts[2], 'send', '#2e90fa', '#eaf4ff'),
+    metric('Descadastros', counts[3], 'unlink', '#9b51e0', '#f5edff')
+  ];
+  document.querySelector('#decisionMetrics').innerHTML = metrics.map((item) => `
+    <article class="metric-card" style="--metric-color:${item.color};--metric-soft:${item.soft}">
+      <span class="metric-icon">${iconSvg(item.icon)}</span><div><div class="metric-value">${formatNumber(item.value)}</div><div class="metric-label">${escapeHtml(item.label)}</div></div>
+    </article>`).join('');
+  document.querySelector('#decisionNavCount').textContent = String(pending.length);
+
+  if (!pending.length) {
+    document.querySelector('#decisionsList').innerHTML = emptyState('Nenhuma decisão pendente', 'Quando a IA precisar da sua escolha, cada sugestão aparecerá aqui com o motivo.');
+    return;
+  }
+  const groups = Object.entries(groupBy(pending, (item) => item.type || 'other'));
+  document.querySelector('#decisionsList').innerHTML = groups.map(([type, items]) => `
+    <section class="decision-group">
+      <div class="decision-group-header"><h3>${escapeHtml(suggestionGroupLabel(type))}</h3><span class="soft-badge">${items.length}</span></div>
+      <div class="decision-list">${items.map(renderDecisionCard).join('')}</div>
+    </section>`).join('');
+}
+
+function renderDecisionCard(item) {
+  const canDecide = cloud.connected || item.source === 'approval';
+  return `<article class="decision-card">
+    <span class="decision-type">${escapeHtml(suggestionGroupLabel(item.type))}</span>
+    <h4>${escapeHtml(item.title || actionLabel(item.action))}</h4>
+    <p>${escapeHtml(item.summary || 'Sem resumo disponível.')}</p>
+    <p class="decision-reason"><strong>Por quê:</strong> ${escapeHtml(item.reason || 'Recomendação criada pela análise inteligente.')}</p>
+    ${canDecide ? `<div class="decision-actions"><button class="button secondary" data-suggestion-id="${escapeHtml(item.id)}" data-suggestion-source="${escapeHtml(item.source || 'cloud')}" data-suggestion-decision="rejected">Ignorar</button><button class="button primary" data-suggestion-id="${escapeHtml(item.id)}" data-suggestion-source="${escapeHtml(item.source || 'cloud')}" data-suggestion-decision="approved">Executar</button></div>` : '<small>Esta sugestão é apenas informativa.</small>'}
+  </article>`;
+}
+
+async function decideSuggestion(id, decision, source) {
+  try {
+    if (cloud.connected) {
+      await cloudApi(`/api/suggestions/${encodeURIComponent(id)}/decision`, { method: 'POST', body: JSON.stringify({ decision }) });
+    } else if (source === 'approval') {
+      await api(`/api/approvals/${encodeURIComponent(id)}/${decision === 'approved' ? 'approved' : 'rejected'}`, { method: 'POST', body: '{}' }, 120000);
+    }
+    await loadProductData();
+    renderProductData();
+    showToast(decision === 'approved' ? 'Ação aprovada e enviada ao agente.' : 'Sugestão ignorada.');
+  } catch (error) {
+    showToast(error.message || 'Não foi possível registrar sua decisão.');
+  }
+}
+
+function renderRules() {
+  document.querySelector('#rulesCount').textContent = `${rulesData.length} ${rulesData.length === 1 ? 'regra' : 'regras'}`;
+  if (!rulesData.length) {
+    document.querySelector('#rulesList').innerHTML = emptyState('Nenhuma regra criada', 'Use o formulário ao lado para ensinar uma automação específica ao agente.');
+    return;
+  }
+  document.querySelector('#rulesList').innerHTML = rulesData.map((rule) => {
+    const conditions = Object.entries(rule.conditions || {}).filter(([, value]) => value).map(([key, value]) => `${conditionLabel(key)}: ${value}`).join(' · ');
+    const actions = rule.actions || {};
+    return `<article class="rule-card">
+      <div class="rule-card-top"><h4>${escapeHtml(rule.name)}</h4><button class="mini-switch ${rule.enabled ? 'is-on' : ''}" data-rule-toggle="${escapeHtml(rule.id)}" aria-label="Ativar ou desativar regra"><span></span></button></div>
+      <p><strong>SE</strong> ${escapeHtml(conditions || 'qualquer mensagem')}</p>
+      <p><strong>ENTÃO</strong> ${escapeHtml(actionLabel(actions.recommendedAction))}${actions.labelName ? ` · ${escapeHtml(actions.labelName)}` : ''}</p>
+      <div class="rule-card-actions"><button class="mini-button danger" data-rule-delete="${escapeHtml(rule.id)}">Excluir</button></div>
+    </article>`;
+  }).join('');
+}
+
+async function createRuleFromForm(event) {
+  event.preventDefault();
+  if (!cloud.connected && !backendConnected) return openBackendDialog();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const conditions = compactObject({ senderIncludes: data.get('senderIncludes'), domain: data.get('domain'), subjectIncludes: data.get('subjectIncludes'), bodyIncludes: data.get('bodyIncludes') });
+  if (!Object.keys(conditions).length) return showToast('Preencha pelo menos uma condição da regra.');
+  const payload = {
+    name: data.get('name'), enabled: true, priority: 100,
+    conditions,
+    actions: compactObject({ category: data.get('category'), priority: data.get('priority'), recommendedAction: data.get('recommendedAction'), labelName: data.get('labelName') })
+  };
+  try {
+    await productApi('/api/rules', { method: 'POST', body: JSON.stringify(payload) });
+    form.reset();
+    rulesData = await productApi('/api/rules');
+    if (!Array.isArray(rulesData)) rulesData = rulesData.items || [];
+    renderRules();
+    showToast('Regra criada e sincronizada.');
+  } catch (error) { showToast(error.message || 'Não foi possível criar a regra.'); }
+}
+
+async function toggleRule(id) {
+  const rule = rulesData.find((item) => item.id === id);
+  if (!rule) return;
+  try {
+    const response = await productApi(`/api/rules/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ ...rule, enabled: !rule.enabled }) });
+    Object.assign(rule, response.rule || { enabled: !rule.enabled });
+    renderRules();
+  } catch (error) { showToast(error.message || 'Não foi possível alterar a regra.'); }
+}
+
+async function deleteRule(id) {
+  try {
+    await productApi(`/api/rules/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    rulesData = rulesData.filter((item) => item.id !== id);
+    renderRules();
+    showToast('Regra excluída.');
+  } catch (error) { showToast(error.message || 'Não foi possível excluir a regra.'); }
+}
+
+function renderHistory() {
+  const items = historyFilter === 'all' ? historyData : historyData.filter((item) => item.action === historyFilter);
+  document.querySelectorAll('[data-history-filter]').forEach((button) => button.classList.toggle('is-selected', button.dataset.historyFilter === historyFilter));
+  document.querySelector('#historyCount').textContent = `${items.length} ${items.length === 1 ? 'ação' : 'ações'}`;
+  if (!items.length) {
+    document.querySelector('#historyList').innerHTML = emptyState('Nada encontrado', 'As ações executadas pelo agente aparecerão aqui.');
+    return;
+  }
+  document.querySelector('#historyList').innerHTML = items.map((item) => {
+    const status = item.reversedAt ? 'reversed' : item.status === 'failed' ? 'failed' : 'executed';
+    const detail = item.subject || item.metadata?.subject || item.detail || item.emailId || 'Mensagem processada';
+    const canUndo = item.reversible && !item.reversedAt && item.status === 'executed';
+    return `<article class="history-item">
+      <span class="history-icon">${iconSvg(actionIcon(item.action))}</span>
+      <span class="history-copy"><strong>${escapeHtml(actionLabel(item.action))}</strong><small>${escapeHtml(detail)} · ${formatDate(item.createdAt)}</small></span>
+      <span class="history-status ${status}">${status === 'reversed' ? 'desfeito' : status === 'failed' ? 'falhou' : 'executado'}</span>
+      ${canUndo ? `<button class="mini-button" data-history-undo="${escapeHtml(item.id)}">Desfazer</button>` : ''}
+    </article>`;
+  }).join('');
+}
+
+async function undoHistoryItem(id) {
+  try {
+    const response = await productApi(`/api/history/${encodeURIComponent(id)}/undo`, { method: 'POST', body: '{}' }, 120000);
+    if (!response.queued) {
+      const item = historyData.find((entry) => entry.id === id);
+      if (item) item.reversedAt = new Date().toISOString();
+    }
+    renderHistory();
+    showToast(response.queued ? 'Reversão enviada ao agente.' : 'Ação desfeita.');
+  } catch (error) { showToast(error.message || 'Não foi possível desfazer esta ação.'); }
+}
+
+function renderInsights() {
+  const trends = dashboardData.trends || [];
+  const days = completeTrendDays(trends, 14);
+  const maxTrend = Math.max(1, ...days.map((item) => Number(item.total || 0)));
+  document.querySelector('#trendChart').innerHTML = days.map((item) => `<div class="trend-column" title="${formatNumber(item.total)} ações"><div class="trend-bar-shell"><span class="trend-bar" style="--trend-height:${Math.max(item.total ? 5 : 0, (item.total / maxTrend) * 100)}%"></span></div><small>${item.label}</small></div>`).join('');
+
+  const actions = dashboardData.topActions || [];
+  const maxAction = Math.max(1, ...actions.map((item) => Number(item.total || 0)));
+  document.querySelector('#topActionsChart').innerHTML = actions.length ? actions.map((item) => `
+    <div class="bar-row"><label>${escapeHtml(actionLabel(item.action))}</label><span class="bar-track"><span class="bar-fill" style="--bar-width:${Math.max(item.total ? 4 : 0, (item.total / maxAction) * 100)}%;--bar-color:#6758ee"></span></span><strong>${formatNumber(item.total)}</strong></div>`).join('') : emptyState('Sem ações ainda', 'Os tipos mais usados aparecerão após a primeira execução.');
+
+  const checks = monitoringData.checks || [];
+  document.querySelector('#monitorGrid').innerHTML = checks.length ? checks.map((item) => `<article class="monitor-card"><span class="monitor-state ${escapeHtml(item.status)}"><i></i>${escapeHtml(monitorStatusLabel(item.status))}</span><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.detail)}</p></article>`).join('') : `<article class="monitor-card"><span class="monitor-state warning"><i></i>Aguardando</span><strong>Backend não conectado</strong><p>Conecte o Inbox AI Cloud para monitoramento contínuo.</p></article>`;
+}
+
+function renderProfile() {
+  const form = document.querySelector('#profileForm');
+  for (const element of form.elements) {
+    if (!element.name || document.activeElement === element) continue;
+    const value = profileData[element.name];
+    element.value = Array.isArray(value) ? value.join(', ') : value ?? '';
+  }
+}
+
+function scheduleProfileSave() {
+  clearTimeout(profileSaveTimer);
+  const indicator = document.querySelector('#profileSaveIndicator');
+  indicator.classList.add('is-saving');
+  indicator.lastChild.textContent = ' Salvando...';
+  profileSaveTimer = setTimeout(saveProfile, 650);
+}
+
+async function saveProfile() {
+  const form = document.querySelector('#profileForm');
+  const next = {};
+  for (const element of form.elements) {
+    if (!element.name) continue;
+    next[element.name] = element.dataset.kind === 'csv' ? splitCsv(element.value) : element.type === 'number' ? Number(element.value) : element.value;
+  }
+  profileData = deepMerge(createDefaultProfile(), next);
+  const indicator = document.querySelector('#profileSaveIndicator');
+  try {
+    if (cloud.connected || backendConnected) {
+      const response = await productApi('/api/profile', { method: 'PUT', body: JSON.stringify(profileData) });
+      profileData = response.profile || profileData;
+    } else {
+      localStorage.setItem('inbox-ai-profile', JSON.stringify(profileData));
+    }
+    indicator.classList.remove('is-saving');
+    indicator.lastChild.textContent = cloud.connected ? ' Perfil salvo na nuvem' : ' Perfil salvo';
+  } catch (error) {
+    indicator.classList.remove('is-saving');
+    indicator.lastChild.textContent = ' Falha ao salvar';
+    showToast(error.message || 'Não foi possível salvar o perfil.');
+  }
+}
+
+function openBackendDialog() {
+  const dialog = document.querySelector('#backendDialog');
+  dialog.querySelector('[name="backendUrl"]').value = cloud.url;
+  dialog.querySelector('[name="backendToken"]').value = cloud.token;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+}
+
+async function connectCloudBackend(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const next = {
+    url: String(formData.get('backendUrl') || '').trim().replace(/\/+$/, ''),
+    token: String(formData.get('backendToken') || '').trim(),
+    connected: false
+  };
+  if (!/^https:\/\//i.test(next.url)) return showToast('Use o endereço HTTPS completo do Worker.');
+  const previous = cloud;
+  cloud = next;
+  try {
+    statusData = await cloudApi('/api/status', {}, 10000);
+    cloud.connected = true;
+    localStorage.setItem(CLOUD_URL_KEY, cloud.url);
+    sessionStorage.setItem(CLOUD_TOKEN_KEY, cloud.token);
+    await loadCloudSettings();
+    renderAll();
+    await loadProductData();
+    renderProductData();
+    document.querySelector('#backendDialog').close();
+    showToast('Inbox AI Cloud conectado.');
+  } catch (error) {
+    cloud = previous;
+    showToast(error.message || 'Não foi possível conectar ao backend.');
+  }
+}
+
+function disconnectCloudBackend() {
+  cloud = { url: '', token: '', connected: false };
+  localStorage.removeItem(CLOUD_URL_KEY);
+  sessionStorage.removeItem(CLOUD_TOKEN_KEY);
+  document.querySelector('#backendDialog').close();
+  updateEnvironment();
+  showToast('Backend online desconectado deste navegador.');
+}
+
+async function cloudApi(pathname, options = {}, timeout = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(`${cloud.url}${pathname}`, {
+      ...options,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cloud.token}`, ...(options.headers || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Backend retornou ${response.status}.`);
+    return data;
+  } finally { clearTimeout(timer); }
+}
+
+function productApi(pathname, options = {}, timeout = 15000) {
+  if (cloud.connected) return cloudApi(pathname, options, timeout);
+  if (backendConnected) return api(pathname, options, timeout);
+  throw new Error('Conecte o backend para usar esta função.');
+}
+
+function registerPwa() {
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => null));
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    document.querySelector('#installApp').classList.remove('is-hidden');
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    document.querySelector('#installApp').classList.add('is-hidden');
+  });
+}
+
+async function installPwa() {
+  if (!deferredInstallPrompt) return showToast('No iPhone, use Compartilhar e depois “Adicionar à Tela de Início”.');
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.querySelector('#installApp').classList.add('is-hidden');
 }
 
 async function persistAndRender() {
@@ -261,14 +685,15 @@ function scheduleSave() {
 async function persistSettings() {
   setSaveIndicator(true);
   writeStoredSettings(settings);
-  if (backendConnected) {
+  if (cloud.connected || backendConnected) {
     try {
-      settings = normalizeUiSettings(deepMerge(createDefaultSettings(), await api('/api/settings', {
-        method: 'PUT',
-        body: JSON.stringify(settings)
-      })));
+      const response = cloud.connected
+        ? await cloudApi('/api/settings', { method: 'PUT', body: JSON.stringify(settings) })
+        : await api('/api/settings', { method: 'PUT', body: JSON.stringify(settings) });
+      settings = normalizeUiSettings(deepMerge(createDefaultSettings(), response.settings || response));
     } catch {
-      backendConnected = false;
+      if (cloud.connected) cloud.connected = false;
+      else backendConnected = false;
       updateEnvironment();
     }
   }
@@ -276,15 +701,21 @@ async function persistSettings() {
 }
 
 async function runAgentNow() {
-  if (!backendConnected) return;
+  if (!backendConnected && !cloud.connected) {
+    openBackendDialog();
+    showToast('Conecte o backend online para executar o agente.');
+    return;
+  }
   const button = document.querySelector('#runNow');
   button.disabled = true;
   button.innerHTML = `${iconSvg('clock')} Processando...`;
   try {
-    await api('/api/run', { method: 'POST', body: '{}' }, 120000);
-    await Promise.all([loadStatus(), loadDashboard()]);
-    renderDashboard();
-    showToast('Execução concluída. Dashboard atualizado.');
+    const result = cloud.connected
+      ? await cloudApi('/api/run', { method: 'POST', body: '{}' }, 30000)
+      : await api('/api/run', { method: 'POST', body: '{}' }, 120000);
+    await loadProductData();
+    renderProductData();
+    showToast(result.queued ? (result.dispatched ? 'Execução enviada ao agente.' : 'Execução solicitada. Ela começará em até 15 minutos.') : 'Execução concluída. Dashboard atualizado.');
   } catch (error) {
     showToast(error.message || 'Não foi possível concluir a execução.');
   } finally {
@@ -404,16 +835,25 @@ function updateHourButtons() {
 }
 
 function setView(view, updateHash = true) {
-  const target = view === 'settings' ? 'settings' : 'overview';
+  const views = {
+    overview: ['Visão geral', 'PAINEL DE CONTROLE', '#visao-geral'],
+    settings: ['Configurações', 'COMPORTAMENTO DO AGENTE', '#configuracoes'],
+    decisions: ['Decisões da IA', 'CENTRAL DE DECISÕES', '#decisoes'],
+    rules: ['Regras', 'AUTOMAÇÃO PERSONALIZADA', '#regras'],
+    history: ['Histórico', 'AÇÕES DO AGENTE', '#historico'],
+    insights: ['Relatórios', 'RESULTADOS E SAÚDE', '#relatorios'],
+    profile: ['Perfil inteligente', 'MEMÓRIA PESSOAL', '#perfil']
+  };
+  const target = views[view] ? view : 'overview';
   document.querySelectorAll('[data-view-panel]').forEach((panel) => {
     const active = panel.dataset.viewPanel === target;
     panel.classList.toggle('is-active', active);
     panel.hidden = !active;
   });
   document.querySelectorAll('.nav-link[data-view-link]').forEach((link) => link.classList.toggle('is-active', link.dataset.viewLink === target));
-  document.querySelector('#pageTitle').textContent = target === 'settings' ? 'Configurações' : 'Visão geral';
-  document.querySelector('#pageKicker').textContent = target === 'settings' ? 'COMPORTAMENTO DO AGENTE' : 'PAINEL DE CONTROLE';
-  if (updateHash) history.replaceState(null, '', target === 'settings' ? '#configuracoes' : '#visao-geral');
+  document.querySelector('#pageTitle').textContent = views[target][0];
+  document.querySelector('#pageKicker').textContent = views[target][1];
+  if (updateHash) history.replaceState(null, '', views[target][2]);
   closeSidebar();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -602,7 +1042,11 @@ function updateEnvironment() {
   const label = document.querySelector('#environmentLabel');
   const detail = document.querySelector('#environmentDetail');
   const runButton = document.querySelector('#runNow');
-  if (backendConnected) {
+  if (cloud.connected) {
+    label.textContent = 'Inbox AI Cloud';
+    detail.textContent = statusData?.lastRun ? `Última execução ${formatDate(statusData.lastRun.completedAt)}` : 'Cloudflare conectado';
+    runButton.classList.remove('is-hidden');
+  } else if (backendConnected) {
     label.textContent = statusData?.gmail?.connected ? 'Gmail conectado' : 'Painel local';
     detail.textContent = 'Dados em tempo real';
     runButton.classList.remove('is-hidden');
@@ -619,7 +1063,7 @@ function setSaveIndicator(saving) {
   indicator.classList.toggle('is-saving', saving);
   indicator.lastChild.textContent = saving
     ? ' Salvando...'
-    : backendConnected ? ' Salvo no agente' : ' Salvo neste navegador';
+    : cloud.connected ? ' Salvo na nuvem' : backendConnected ? ' Salvo no agente' : ' Salvo neste navegador';
 }
 
 function openSidebar() {
@@ -665,6 +1109,86 @@ function providerLabel(provider) {
   if (provider === 'gemini') return 'Gemini';
   if (provider === 'fallback') return 'OpenAI + Gemini';
   return 'OpenAI';
+}
+
+function createDefaultProfile() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('inbox-ai-profile') || 'null');
+    if (stored) return deepMerge(profileDefaults(), stored);
+  } catch { /* perfil local opcional */ }
+  return profileDefaults();
+}
+
+function profileDefaults() {
+  return { vipSenders: [], importantKeywords: [], workDomains: [], favoriteNewsletters: [], preferredTone: 'cordial', signature: '', workHours: '08:00-18:00', reminderLeadMinutes: 60, notes: '' };
+}
+
+function viewFromHash(hash) {
+  return ({
+    '#visao-geral': 'overview', '#configuracoes': 'settings', '#decisoes': 'decisions',
+    '#regras': 'rules', '#historico': 'history', '#relatorios': 'insights', '#perfil': 'profile'
+  })[hash] || 'overview';
+}
+
+function suggestionGroupLabel(type) {
+  return ({ archive: 'Arquivar', delete: 'Apagar', send: 'Enviar mensagem', unsubscribe: 'Descadastrar', organize: 'Organizar', other: 'Outras sugestões' })[type] || 'Outras sugestões';
+}
+
+function conditionLabel(key) {
+  return ({ senderIncludes: 'remetente contém', domain: 'domínio', subjectIncludes: 'assunto contém', bodyIncludes: 'conteúdo contém', hasAttachment: 'tem anexo' })[key] || key;
+}
+
+function actionLabel(action) {
+  return ({
+    archiveEmail: 'Arquivar e-mail', arquivar: 'Arquivar e-mail', deleteEmail: 'Mover para lixeira', hardDeleteEmail: 'Apagar definitivamente', excluir_com_confirmacao: 'Mover para lixeira',
+    unsubscribeNewsletter: 'Fazer descadastro', descadastro: 'Fazer descadastro', sendEmail: 'Enviar mensagem', createDraft: 'Preparar resposta', rascunho: 'Preparar resposta',
+    forwardEmail: 'Encaminhar e-mail', applyLabel: 'Aplicar etiqueta', label: 'Aplicar etiqueta', identifyNewsletter: 'Organizar newsletter', markImportant: 'Marcar como importante',
+    markRead: 'Marcar como lido', marcar_lido: 'Marcar como lido', markUnread: 'Marcar como não lido', createReminder: 'Criar lembrete', lembrete: 'Criar lembrete',
+    createCalendarEvent: 'Criar evento', evento: 'Criar evento', emptyTrash: 'Esvaziar lixeira'
+  })[action] || action || 'Ação';
+}
+
+function actionIcon(action) {
+  if (['archiveEmail', 'arquivar'].includes(action)) return 'archive';
+  if (['deleteEmail', 'hardDeleteEmail', 'emptyTrash', 'excluir_com_confirmacao'].includes(action)) return 'trash';
+  if (['applyLabel', 'identifyNewsletter', 'label'].includes(action)) return 'tag';
+  if (['markRead', 'markUnread', 'marcar_lido'].includes(action)) return 'check';
+  if (['markImportant'].includes(action)) return 'star';
+  if (['createDraft', 'sendEmail', 'forwardEmail', 'rascunho'].includes(action)) return 'send';
+  if (['createReminder', 'lembrete'].includes(action)) return 'bell';
+  if (['createCalendarEvent', 'evento'].includes(action)) return 'calendar';
+  return 'sparkles';
+}
+
+function completeTrendDays(rows, totalDays) {
+  const byDate = new Map(rows.map((item) => [item.day, Number(item.total || 0)]));
+  return Array.from({ length: totalDays }, (_, index) => {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() - (totalDays - index - 1));
+    const key = date.toISOString().slice(0, 10);
+    return { day: key, total: byDate.get(key) || 0, label: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(date) };
+  });
+}
+
+function monitorStatusLabel(status) {
+  return ({ ok: 'Saudável', warning: 'Atenção', working: 'Em andamento', error: 'Erro' })[status] || 'Status';
+}
+
+function emptyState(title, description) {
+  return `<div class="empty-state"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p></div>`;
+}
+
+function groupBy(items, selector) {
+  return items.reduce((groups, item) => {
+    const key = selector(item);
+    (groups[key] ||= []).push(item);
+    return groups;
+  }, {});
+}
+
+function compactObject(value) {
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item || '').trim()]).filter(([, item]) => item));
 }
 
 function createDefaultSettings() {

@@ -24,3 +24,9 @@ agent-settings.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Cloudflare local
+/backend/cloudflare/.wrangler/
+/backend/cloudflare/.dev.vars
+/backend/cloudflare/.cloudflare.local.json
+/.tools/

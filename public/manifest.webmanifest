@@ -1,0 +1,24 @@
+{
+  "name": "Inbox AI — Gmail Agent",
+  "short_name": "Inbox AI",
+  "description": "Painel inteligente para organizar e automatizar o Gmail.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Visão geral", "url": "./#visao-geral" },
+    { "name": "Decisões da IA", "url": "./#decisoes" },
+    { "name": "Configurações", "url": "./#configuracoes" }
+  ]
+}
+

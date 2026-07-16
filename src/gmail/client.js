@@ -72,6 +72,11 @@ export async function applyLabel(gmail, messageId, labelId, options = {}) {
   return modifyLabels(gmail, messageId, { addLabelIds: [labelId] });
 }
 
+export async function removeLabel(gmail, messageId, labelId, options = {}) {
+  if (options.dryRun) return { dryRun: true };
+  return modifyLabels(gmail, messageId, { removeLabelIds: [labelId] });
+}
+
 export async function markRead(gmail, messageId, options = {}) {
   if (options.dryRun) return { dryRun: true };
   return modifyLabels(gmail, messageId, { removeLabelIds: ['UNREAD'] });
@@ -87,14 +92,29 @@ export async function markImportant(gmail, messageId, options = {}) {
   return modifyLabels(gmail, messageId, { addLabelIds: ['IMPORTANT'] });
 }
 
+export async function markNotImportant(gmail, messageId, options = {}) {
+  if (options.dryRun) return { dryRun: true };
+  return modifyLabels(gmail, messageId, { removeLabelIds: ['IMPORTANT'] });
+}
+
 export async function archiveMessage(gmail, messageId, options = {}) {
   if (options.dryRun) return { dryRun: true };
   return modifyLabels(gmail, messageId, { removeLabelIds: ['INBOX'] });
 }
 
+export async function restoreToInbox(gmail, messageId, options = {}) {
+  if (options.dryRun) return { dryRun: true };
+  return modifyLabels(gmail, messageId, { addLabelIds: ['INBOX'] });
+}
+
 export async function trashMessage(gmail, messageId, options = {}) {
   if (options.dryRun) return { dryRun: true };
   return gmail.users.messages.trash({ userId: USER_ID, id: messageId });
+}
+
+export async function untrashMessage(gmail, messageId, options = {}) {
+  if (options.dryRun) return { dryRun: true };
+  return gmail.users.messages.untrash({ userId: USER_ID, id: messageId });
 }
 
 export async function deleteMessage(gmail, messageId, options = {}) {
@@ -115,6 +135,12 @@ export async function createDraft(gmail, email, draft, options = {}) {
     }
   });
   return response.data;
+}
+
+export async function deleteDraft(gmail, draftId, options = {}) {
+  if (!draftId) throw new Error('Rascunho sem identificador para desfazer.');
+  if (options.dryRun) return { dryRun: true };
+  return gmail.users.drafts.delete({ userId: USER_ID, id: draftId });
 }
 
 export async function sendReply(gmail, email, draft, options = {}) {

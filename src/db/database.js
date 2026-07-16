@@ -42,7 +42,8 @@ export class AgentDatabase {
         risk TEXT NOT NULL,
         status TEXT NOT NULL,
         requires_confirmation INTEGER NOT NULL DEFAULT 0,
-        data TEXT NOT NULL
+        data TEXT NOT NULL,
+        reversed_at TEXT
       );
 
       CREATE TABLE IF NOT EXISTS approvals (
@@ -83,7 +84,40 @@ export class AgentDatabase {
         source_email_id TEXT,
         payload TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS agent_runs (
+        id TEXT PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        completed_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        processed INTEGER NOT NULL DEFAULT 0,
+        executed INTEGER NOT NULL DEFAULT 0,
+        failed INTEGER NOT NULL DEFAULT 0,
+        skipped INTEGER NOT NULL DEFAULT 0,
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        summary TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS custom_rules (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        priority INTEGER NOT NULL DEFAULT 100,
+        conditions TEXT NOT NULL,
+        actions TEXT NOT NULL,
+        matches_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS personal_profile (
+        id TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
     `);
+    const actionColumns = this.db.prepare('PRAGMA table_info(action_history)').all().map((column) => column.name);
+    if (!actionColumns.includes('reversed_at')) this.db.exec('ALTER TABLE action_history ADD COLUMN reversed_at TEXT;');
   }
 
   getSetting(key, fallback = null) {
@@ -144,6 +178,108 @@ export class AgentDatabase {
     return rows.map((row) => ({ ...row, data: JSON.parse(row.data || '{}') }));
   }
 
+  getAction(id) {
+    const row = this.db.prepare('SELECT * FROM action_history WHERE id = ?').get(id);
+    return row ? { ...row, data: JSON.parse(row.data || '{}') } : null;
+  }
+
+  markActionReversed(id) {
+    this.db.prepare('UPDATE action_history SET reversed_at = ? WHERE id = ?').run(nowIso(), id);
+  }
+
+  recordRun({ startedAt, completedAt = nowIso(), result = {} }) {
+    const items = result.items || result.payload?.items || [];
+    const actions = items.flatMap((item) => item.actions || []);
+    const row = {
+      id: stableId('run'),
+      started_at: startedAt,
+      completed_at: completedAt,
+      status: result.ok === false ? 'failed' : result.skipped ? 'skipped' : 'completed',
+      processed: items.length,
+      executed: actions.filter((action) => action.status === 'executed').length,
+      failed: actions.filter((action) => action.status === 'failed').length,
+      skipped: result.skipped ? 1 : 0,
+      duration_ms: Math.max(0, Date.parse(completedAt) - Date.parse(startedAt)),
+      summary: JSON.stringify({ reason: result.reason || null, actions: actions.length })
+    };
+    this.db.prepare(`INSERT INTO agent_runs
+      (id, started_at, completed_at, status, processed, executed, failed, skipped, duration_ms, summary)
+      VALUES (@id, @started_at, @completed_at, @status, @processed, @executed, @failed, @skipped, @duration_ms, @summary)`).run(row);
+    return { ...row, summary: JSON.parse(row.summary) };
+  }
+
+  listRuns(limit = 50) {
+    return this.db.prepare('SELECT * FROM agent_runs ORDER BY completed_at DESC LIMIT ?').all(limit)
+      .map((row) => ({ ...row, summary: JSON.parse(row.summary || '{}') }));
+  }
+
+  listRules(enabledOnly = false) {
+    const sql = enabledOnly
+      ? 'SELECT * FROM custom_rules WHERE enabled = 1 ORDER BY priority, created_at'
+      : 'SELECT * FROM custom_rules ORDER BY priority, created_at';
+    return this.db.prepare(sql).all().map(parseRuleRow);
+  }
+
+  getRule(id) {
+    const row = this.db.prepare('SELECT * FROM custom_rules WHERE id = ?').get(id);
+    return row ? parseRuleRow(row) : null;
+  }
+
+  upsertRule(value = {}) {
+    const existing = value.id ? this.getRule(value.id) : null;
+    const stamp = nowIso();
+    const rule = {
+      id: value.id || stableId('rule'),
+      name: String(value.name || 'Nova regra').trim().slice(0, 120),
+      enabled: value.enabled === false ? 0 : 1,
+      priority: Math.max(1, Math.min(9999, Number(value.priority || 100))),
+      conditions: JSON.stringify(value.conditions || {}),
+      actions: JSON.stringify(value.actions || {}),
+      matches_count: Number(value.matchesCount || existing?.matchesCount || 0),
+      created_at: existing?.createdAt || stamp,
+      updated_at: stamp
+    };
+    this.db.prepare(`INSERT INTO custom_rules (id, name, enabled, priority, conditions, actions, matches_count, created_at, updated_at)
+      VALUES (@id, @name, @enabled, @priority, @conditions, @actions, @matches_count, @created_at, @updated_at)
+      ON CONFLICT(id) DO UPDATE SET name = excluded.name, enabled = excluded.enabled, priority = excluded.priority,
+      conditions = excluded.conditions, actions = excluded.actions, matches_count = excluded.matches_count, updated_at = excluded.updated_at`).run(rule);
+    return this.getRule(rule.id);
+  }
+
+  deleteRule(id) {
+    this.db.prepare('DELETE FROM custom_rules WHERE id = ?').run(id);
+  }
+
+  getPersonalProfile() {
+    const row = this.db.prepare("SELECT data FROM personal_profile WHERE id = 'default'").get();
+    return row ? JSON.parse(row.data || '{}') : {};
+  }
+
+  savePersonalProfile(profile = {}) {
+    this.db.prepare(`INSERT INTO personal_profile (id, data, updated_at) VALUES ('default', ?, ?)
+      ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`).run(JSON.stringify(profile), nowIso());
+    return profile;
+  }
+
+  monitoringSummary() {
+    const lastRun = this.db.prepare('SELECT * FROM agent_runs ORDER BY completed_at DESC LIMIT 1').get() || null;
+    const failed24h = this.db.prepare("SELECT COUNT(*) AS total FROM action_history WHERE status = 'failed' AND created_at >= datetime('now', '-1 day')").get();
+    const pendingApprovals = this.db.prepare("SELECT COUNT(*) AS total FROM approvals WHERE status = 'pending'").get();
+    const ageHours = lastRun ? (Date.now() - Date.parse(lastRun.completed_at)) / 3600000 : null;
+    return {
+      ok: true,
+      updatedAt: nowIso(),
+      lastRun: lastRun ? { ...lastRun, summary: JSON.parse(lastRun.summary || '{}') } : null,
+      checks: [
+        monitorCheck('server', 'Painel local', 'ok', 'Servidor respondendo.'),
+        monitorCheck('agent', 'Última execução', !lastRun || ageHours > 3 ? 'warning' : 'ok', !lastRun ? 'Nenhuma execução registrada.' : `${ageHours.toFixed(1)} hora(s) atrás.`),
+        monitorCheck('failures', 'Falhas nas últimas 24h', Number(failed24h.total) ? 'warning' : 'ok', `${Number(failed24h.total)} falha(s).`),
+        monitorCheck('approvals', 'Decisões pendentes', Number(pendingApprovals.total) ? 'working' : 'ok', `${Number(pendingApprovals.total)} pendente(s).`)
+      ],
+      openEvents: []
+    };
+  }
+
   dashboardSummary() {
     const actionRows = this.db.prepare(`
       SELECT action, status, COUNT(*) AS total
@@ -162,6 +298,15 @@ export class AgentDatabase {
         COALESCE(SUM(total_estimated_bytes), 0) AS estimated_bytes
       FROM newsletters
     `).get();
+    const trends = this.db.prepare(`
+      SELECT date(created_at) AS day, COUNT(*) AS total
+      FROM action_history
+      WHERE created_at >= datetime('now', '-13 days')
+      GROUP BY date(created_at)
+      ORDER BY day
+    `).all();
+    const lastRun = this.db.prepare('SELECT * FROM agent_runs ORDER BY completed_at DESC LIMIT 1').get() || null;
+    const rulesTotal = this.db.prepare('SELECT COUNT(*) AS total FROM custom_rules WHERE enabled = 1').get();
     const recentActions = this.listActions(12);
     const recentLogs = this.listLogs(10);
     const pendingApprovals = this.listApprovals('pending', 12);
@@ -179,7 +324,8 @@ export class AgentDatabase {
         blocked: countStatus('blocked'),
         failed: countStatus('failed'),
         suggestions: countStatus('dry-run') + countStatus('blocked') + countApproval('pending'),
-        pendingApprovals: countApproval('pending')
+        pendingApprovals: countApproval('pending'),
+        rules: Number(rulesTotal.total || 0)
       },
       emailActions: {
         archived: countAction('archiveEmail'),
@@ -202,6 +348,9 @@ export class AgentDatabase {
       approvalsByStatus: rowsToObject(approvalRows, 'status'),
       actionsByStatus: rowsToObject(actionRows, 'status'),
       actionsByName: rowsToObject(actionRows, 'action'),
+      trends,
+      topActions: Object.entries(rowsToObject(actionRows, 'action')).map(([action, total]) => ({ action, total })).sort((a, b) => b.total - a.total).slice(0, 8),
+      lastRun: lastRun ? { ...lastRun, summary: JSON.parse(lastRun.summary || '{}') } : null,
       recentActions,
       recentLogs,
       pendingApprovals
@@ -422,4 +571,22 @@ function actionTitle(actionName) {
     moveEmail: 'Mover e-mail'
   };
   return labels[actionName] || actionName || 'Sugestão';
+}
+
+function parseRuleRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    enabled: Boolean(row.enabled),
+    priority: Number(row.priority || 100),
+    conditions: JSON.parse(row.conditions || '{}'),
+    actions: JSON.parse(row.actions || '{}'),
+    matchesCount: Number(row.matches_count || 0),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function monitorCheck(id, title, status, detail) {
+  return { id, title, status, detail };
 }

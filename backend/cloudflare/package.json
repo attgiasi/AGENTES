@@ -1,0 +1,19 @@
+{
+  "name": "inbox-ai-cloudflare-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "secrets:setup": "node scripts/setup-secrets.mjs",
+    "secret:copy-admin": "node scripts/copy-local-secret.mjs admin",
+    "secret:copy-ingest": "node scripts/copy-local-secret.mjs ingest",
+    "seed:local": "node scripts/seed-from-local.mjs",
+    "db:local": "npx wrangler d1 execute inbox-ai --local --file=./schema.sql",
+    "db:remote": "npx wrangler d1 execute inbox-ai --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

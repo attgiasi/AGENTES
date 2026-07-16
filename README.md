@@ -17,6 +17,39 @@ O painel foi organizado como um produto final:
 - limite de até 1000 e-mails por execução;
 - botão `Copiar configuração`, sem botão de download;
 - a interface local e a hospedada no GitHub Pages usam os mesmos arquivos.
+- central de decisões da IA com explicação por sugestão;
+- histórico das ações com botão para desfazer quando a ação for reversível;
+- regras personalizadas no formato “se isto acontecer, faça aquilo”;
+- perfil inteligente para remetentes VIP, assuntos e rotina;
+- relatórios de 14 dias e monitoramento do funcionamento;
+- instalação no celular/computador como aplicativo (PWA);
+- backend online gratuito usando Cloudflare Workers + D1.
+
+## O que já está hospedado neste projeto
+
+Painel online:
+
+```text
+https://attgiasi.github.io/AGENTES/pages/
+```
+
+Backend Cloudflare:
+
+```text
+https://inbox-ai-backend.att-giasi.workers.dev
+```
+
+Banco online:
+
+```text
+Cloudflare D1: inbox-ai
+```
+
+O painel continua no GitHub Pages. A Cloudflare guarda configuração, histórico, regras, sugestões, perfil e comandos. O GitHub Actions continua sendo o local seguro que recebe as chaves do Gmail e da IA e executa o agente.
+
+O corpo completo dos e-mails não é enviado para o painel online. A sincronização envia apenas os dados necessários para o dashboard, como identificador, remetente, assunto, categoria, resumo e ação executada.
+
+Para entender ou refazer somente a hospedagem Cloudflare, leia o guia infantil e detalhado em [backend/cloudflare/README.md](backend/cloudflare/README.md).
 
 Use sempre `npm.cmd`, não `npm`, para evitar este erro:
 
@@ -44,6 +77,8 @@ Faça exatamente nesta ordem:
 14. Abrir o painel com `npm.cmd run server`.
 15. Rodar primeiro com `agent.dryRun=true`, ou seja, simulação ligada.
 16. Só depois subir no GitHub e criar Secrets.
+17. Publicar o backend Cloudflare e conectar o painel online.
+18. Instalar o painel como aplicativo, se quiser.
 
 Não rode estes comandos antes de criar e colocar `credentials.json` na pasta:
 

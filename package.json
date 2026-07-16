@@ -15,10 +15,11 @@
     "settings:export": "node --experimental-sqlite --no-warnings scripts/export-settings.js",
     "ui:sync": "node --no-warnings scripts/sync-dashboard.js",
     "ui:check": "node --no-warnings scripts/sync-dashboard.js --check",
+    "security:check": "node --no-warnings scripts/check-secrets.js",
     "config:validate": "node --experimental-sqlite --no-warnings scripts/validate-config.js",
     "config:summary": "node --experimental-sqlite --no-warnings scripts/print-config-summary.js",
     "config:summary:db": "node --experimental-sqlite --no-warnings scripts/print-config-summary.js --db",
-    "check": "node --experimental-sqlite --no-warnings scripts/check-syntax.js && node --no-warnings scripts/sync-dashboard.js --check && node --experimental-sqlite --no-warnings --test"
+    "check": "node --experimental-sqlite --no-warnings scripts/check-syntax.js && node --no-warnings scripts/sync-dashboard.js --check && node --no-warnings scripts/check-secrets.js && node --experimental-sqlite --no-warnings --test"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

@@ -6,6 +6,27 @@ export function classifyWithRules(email, settings) {
   const text = `${email.headers?.from}\n${email.subject}\n${email.snippet}\n${email.bodyText}`;
   const signals = parseEmailSignals(email);
 
+  const customRule = matchCustomRule(email, settings.customRules || []);
+  if (customRule) {
+    const actions = customRule.actions || {};
+    return {
+      ...decision(
+        email,
+        actions.category || 'outro',
+        actions.priority || 'media',
+        actions.recommendedAction || 'label',
+        actions.risk || 'baixo',
+        `Regra personalizada aplicada: ${customRule.name}.`
+      ),
+      customRuleId: customRule.id,
+      customRuleName: customRule.name,
+      customLabel: actions.labelName || null
+    };
+  }
+
+  const personal = personalProfileDecision(email, settings.personalProfile || {});
+  if (personal) return personal;
+
   if (isNewsletterEmail(email, settings)) {
     return decision(email, 'newsletter', 'baixa', 'arquivar', 'baixo', 'Regras locais detectaram newsletter/mailing.');
   }
@@ -31,6 +52,41 @@ export function classifyWithRules(email, settings) {
   }
 
   return decision(email, 'outro', 'baixa', 'label', 'baixo', 'Nenhum sinal específico encontrado.');
+}
+
+export function matchCustomRule(email, rules = []) {
+  const ordered = [...rules].filter((rule) => rule?.enabled !== false).sort((a, b) => Number(a.priority || 100) - Number(b.priority || 100));
+  return ordered.find((rule) => matchesConditions(email, rule.conditions || {})) || null;
+}
+
+function matchesConditions(email, conditions) {
+  const entries = Object.entries(conditions).filter(([, value]) => String(value || '').trim());
+  if (!entries.length) return false;
+  const sender = `${email.from?.name || ''} ${email.from?.email || ''}`.toLowerCase();
+  const domain = String(email.from?.domain || '').toLowerCase();
+  const subject = String(email.subject || '').toLowerCase();
+  const body = `${email.snippet || ''} ${email.bodyText || ''}`.toLowerCase();
+  return entries.every(([key, value]) => {
+    const needle = String(value).toLowerCase().trim();
+    if (key === 'senderIncludes') return sender.includes(needle);
+    if (key === 'domain') return domain === needle || domain.endsWith(`.${needle}`);
+    if (key === 'subjectIncludes') return subject.includes(needle);
+    if (key === 'bodyIncludes') return body.includes(needle);
+    if (key === 'hasAttachment') return Boolean(email.attachments?.length) === ['true', '1', 'sim'].includes(needle);
+    return true;
+  });
+}
+
+function personalProfileDecision(email, profile) {
+  const sender = String(email.from?.email || '').toLowerCase();
+  const domain = String(email.from?.domain || '').toLowerCase();
+  const text = `${email.subject || ''} ${email.snippet || ''} ${email.bodyText || ''}`;
+  const vip = (profile.vipSenders || []).some((value) => sender === String(value).toLowerCase());
+  const work = (profile.workDomains || []).some((value) => domain === String(value).toLowerCase());
+  const keyword = includesAny(text, profile.importantKeywords || []);
+  if (!vip && !work && !keyword) return null;
+  const reason = vip ? 'Remetente VIP do perfil pessoal.' : work ? 'Domínio profissional do perfil pessoal.' : 'Palavra importante do perfil pessoal.';
+  return decision(email, vip ? 'pessoal' : 'trabalho', vip || keyword ? 'urgente' : 'alta', 'label', 'baixo', reason);
 }
 
 function decision(email, categoria, prioridade, acao, risco, motivo) {
@@ -61,4 +117,3 @@ function decision(email, categoria, prioridade, acao, risco, motivo) {
     }
   };
 }
-

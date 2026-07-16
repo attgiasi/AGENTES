@@ -14,7 +14,7 @@ on:
       - "package.json"
       - "package-lock.json"
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: read
@@ -66,6 +66,8 @@ jobs:
           SHORTCUT_TOKEN: ${{ secrets.SHORTCUT_TOKEN }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           AGENT_SETTINGS_JSON: ${{ secrets.AGENT_SETTINGS_JSON }}
+          REMOTE_API_URL: ${{ secrets.REMOTE_API_URL }}
+          REMOTE_INGEST_TOKEN: ${{ secrets.REMOTE_INGEST_TOKEN }}
         run: npm run start
 
       - name: Guardar relatórios e logs

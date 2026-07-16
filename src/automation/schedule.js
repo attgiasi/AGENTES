@@ -13,6 +13,10 @@ export function shouldRunBySchedule(settings, date = new Date()) {
     return { allowed: false, reason: 'Configurado para rodar somente em dias úteis.' };
   }
 
+  if (parts.minute !== 0) {
+    return { allowed: false, reason: 'Verificação intermediária; a execução automática ocorre no início da hora.' };
+  }
+
   const interval = Math.max(1, Math.min(24, Number(automation.intervalHours || 1)));
   if (parts.hour % interval !== 0) {
     return { allowed: false, reason: `Intervalo de ${interval}h; esta hora não é ponto de execução.` };
@@ -25,6 +29,7 @@ function getTimeParts(date, timezone) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: 'numeric',
+    minute: 'numeric',
     weekday: 'short',
     hour12: false
   }).formatToParts(date);
@@ -33,6 +38,7 @@ function getTimeParts(date, timezone) {
   const weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   return {
     hour,
+    minute: Number(parts.find((part) => part.type === 'minute')?.value || 0),
     weekday: weekdayMap[weekdayText] ?? 0
   };
 }
