@@ -3,236 +3,243 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Configurador online - Gmail Apple IA Agent</title>
+    <meta name="theme-color" content="#07111f">
+    <title>Inbox AI — Gmail Agent</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <header class="hero">
-      <p class="eyebrow">Gmail + Apple + IA</p>
-      <h1>Painel de configuração online do agente</h1>
-      <p>Esta página tem a mesma organização do painel local, mas roda direto no GitHub Pages. Configure, copie o JSON e cole no Secret <code>AGENT_SETTINGS_JSON</code>.</p>
-      <div class="hero-actions actions">
-        <button id="safePreset">Configuração segura</button>
-        <button id="autoArchivePreset">Autonomia total + arquivar tudo</button>
-        <button id="copyJson" class="primary">Copiar configuração para GitHub</button>
-        <button id="downloadJson">Baixar JSON</button>
-      </div>
-    </header>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#" data-view-link="overview" aria-label="Abrir visão geral">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img"><path d="M4.5 6.5 12 12l7.5-5.5M5 18h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z"/></svg>
+          </span>
+          <span><strong>Inbox AI</strong><small>Gmail Agent</small></span>
+        </a>
 
-    <main class="grid">
-      <section class="card wide dashboard-card">
-        <div class="section-title">
-          <div>
-            <h2>Dashboard geral</h2>
-            <p class="hint">No online, o dashboard mostra o caminho de configuração. Os dados reais de arquivados, apagados e sugestões aparecem no painel local, porque ele tem acesso ao backend.</p>
+        <nav class="main-nav" aria-label="Navegação principal">
+          <button class="nav-link is-active" data-view-link="overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>
+            <span>Visão geral</span>
+          </button>
+          <button class="nav-link" data-view-link="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.58 15 1.7 1.7 0 0 0 3 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.58 1.7 1.7 0 0 0 10 3h4v.08A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.42 9 1.7 1.7 0 0 0 21 10v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+            <span>Configurações</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="environment-card">
+            <span class="live-dot"></span>
+            <span><strong id="environmentLabel">Carregando</strong><small id="environmentDetail">Preparando painel</small></span>
           </div>
+          <span class="version">Inbox AI · 2.0</span>
         </div>
-        <div class="metric-grid">
-          <article class="metric-card">
-            <strong>1</strong>
-            <span>Configure</span>
-            <small>Ligue/desligue as chaves abaixo.</small>
-          </article>
-          <article class="metric-card">
-            <strong>2</strong>
-            <span>Copie</span>
-            <small>Clique em copiar configuração.</small>
-          </article>
-          <article class="metric-card">
-            <strong>3</strong>
-            <span>Cole</span>
-            <small>Cole no Secret AGENT_SETTINGS_JSON.</small>
-          </article>
-          <article class="metric-card">
-            <strong>4</strong>
-            <span>Execute</span>
-            <small>Rode o workflow no GitHub Actions.</small>
-          </article>
-        </div>
-      </section>
+      </aside>
 
-      <section class="card">
-        <h2>1. Visão geral</h2>
-        <div class="status-list">
-          <div class="status-pill"><strong>Página</strong><span>Online no GitHub Pages</span></div>
-          <div class="status-pill"><strong>Função</strong><span>Montar AGENT_SETTINGS_JSON</span></div>
-          <div class="status-pill"><strong>Segurança</strong><span>Não salva senha, token ou chave</span></div>
-        </div>
-        <p class="hint">Fluxo direto: escolha autonomia, ligue as ações e rode. Se a autonomia permitir, a ação ligada executa.</p>
-        <div id="coreSwitches" class="switch-grid"></div>
-      </section>
+      <div class="workspace">
+        <header class="topbar">
+          <button class="icon-button mobile-menu" id="mobileMenu" aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div class="topbar-title">
+            <span class="page-kicker" id="pageKicker">PAINEL DE CONTROLE</span>
+            <h1 id="pageTitle">Visão geral</h1>
+          </div>
+          <div class="topbar-actions">
+            <span class="save-indicator" id="saveIndicator"><span></span>Configuração pronta</span>
+            <button class="button secondary" id="runNow">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+              Rodar agora
+            </button>
+            <button class="button primary" id="copySettings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+              Copiar configuração
+            </button>
+          </div>
+        </header>
 
-      <section class="card">
-        <h2>2. IA principal</h2>
-        <div class="form-grid one-column">
-          <label>Provedor principal
-            <select data-path="ai.provider">
-              <option value="openai">OpenAI principal</option>
-              <option value="gemini">Gemini principal</option>
-              <option value="fallback">OpenAI com fallback Gemini</option>
-            </select>
-          </label>
-          <label>Modelo OpenAI
-            <input data-path="ai.openai.model">
-          </label>
-          <label>Modelo Gemini
-            <input data-path="ai.gemini.model">
-          </label>
-        </div>
-        <div id="aiSwitches" class="switch-grid compact"></div>
-      </section>
+        <main class="content">
+          <section class="view-panel is-active" data-view-panel="overview">
+            <div class="welcome-card">
+              <div class="welcome-copy">
+                <span class="eyebrow">GMAIL + INTELIGÊNCIA ARTIFICIAL</span>
+                <h2>Sua caixa de entrada no piloto automático.</h2>
+                <p>Organize, priorize e transforme e-mails em ações com uma configuração simples e centralizada.</p>
+                <button class="button light" data-view-link="settings">Ajustar automação</button>
+              </div>
+              <div class="agent-orbit" aria-hidden="true">
+                <span class="orbit orbit-one"></span>
+                <span class="orbit orbit-two"></span>
+                <span class="orbit-core">
+                  <svg viewBox="0 0 24 24"><path d="M4.5 6.5 12 12l7.5-5.5M5 18h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z"/></svg>
+                </span>
+                <i class="orbit-dot dot-one"></i><i class="orbit-dot dot-two"></i><i class="orbit-dot dot-three"></i>
+              </div>
+            </div>
 
-      <section class="card wide">
-        <h2>3. Nível de autonomia</h2>
-        <p class="hint">A autonomia decide o que pede aprovação. As ações ligadas decidem o que o agente pode fazer.</p>
-        <div id="autonomyGrid" class="choice-grid"></div>
-      </section>
+            <div class="section-heading">
+              <div><span class="section-eyebrow">RESULTADOS</span><h2>Atividade do agente</h2></div>
+              <span class="updated-at" id="dashboardUpdated">Aguardando dados</span>
+            </div>
+            <div class="metric-grid" id="dashboardMetrics"></div>
 
-      <section class="card wide">
-        <h2>4. Ações diretas do agente</h2>
-        <p class="hint">Este é o menu único. Ligue o que você quer que o agente faça. O nível de autonomia acima decide se ele executa direto ou pede aprovação.</p>
-        <div class="notice">
-          Quer tirar todos os e-mails encontrados da caixa de entrada? Use o botão <strong>Autonomia total + arquivar tudo</strong> no topo, ou ligue manualmente: Autonomia total, Arquivar e-mails, Arquivar tudo imediatamente e Executar tudo na hora.
-        </div>
-        <h3>Ações de baixo risco</h3>
-        <div id="actionLowSwitches" class="switch-grid"></div>
-        <h3>Ações de médio risco</h3>
-        <p class="hint">Para arquivar todos os e-mails encontrados, ligue “Arquivar e-mails” e “Arquivar tudo imediatamente”.</p>
-        <div id="actionMediumSwitches" class="switch-grid"></div>
-        <h3>Ações de alto risco</h3>
-        <div id="actionHighSwitches" class="switch-grid"></div>
-      </section>
+            <div class="dashboard-layout">
+              <article class="surface activity-card">
+                <div class="card-heading">
+                  <div><span class="section-eyebrow">DESEMPENHO</span><h3>Ações executadas</h3></div>
+                  <span class="soft-badge" id="totalActionsBadge">0 ações</span>
+                </div>
+                <div class="activity-bars" id="activityBars"></div>
+              </article>
 
-      <section class="card wide">
-        <h2>5. E-mails importantes</h2>
-        <p class="hint">Defina o que é importante, marque para leitura e escolha um único destino depois de marcar.</p>
-        <div id="importantSwitches" class="switch-grid compact"></div>
-        <div class="form-grid">
-          <label>Etiqueta importante
-            <input data-path="important.labelName">
-          </label>
-          <label>Depois de marcar como importante
-            <select data-path="important.afterMarkAction">
-              <option value="keep">Manter na caixa de entrada para eu ler</option>
-              <option value="archive">Arquivar depois de marcar</option>
-              <option value="delete">Mover para lixeira depois de marcar</option>
-            </select>
-          </label>
-        </div>
-        <h3>Prioridades tratadas como importantes</h3>
-        <div id="importantPriorityGrid" class="choice-grid compact"></div>
-        <h3>Categorias tratadas como importantes</h3>
-        <div id="importantCategoryGrid" class="choice-grid compact"></div>
-      </section>
+              <article class="surface agent-summary-card">
+                <div class="card-heading">
+                  <div><span class="section-eyebrow">AGENTE</span><h3>Resumo da automação</h3></div>
+                  <span class="agent-state" id="agentState"><i></i>Ativo</span>
+                </div>
+                <div class="summary-list" id="configurationSummary"></div>
+                <button class="text-button" data-view-link="settings">Abrir configurações <span>→</span></button>
+              </article>
+            </div>
+          </section>
 
-      <section class="card wide">
-        <h2>6. Gmail e execução</h2>
-        <p class="hint">Escolha quais caixas do Gmail entram na leitura e quando o agente pode rodar. O máximo aceito é 1000 e-mails por execução.</p>
-        <div class="form-grid">
-          <label>Máximo de e-mails por execução
-            <input type="number" min="1" max="1000" data-path="agent.maxEmailsPerRun">
-          </label>
-          <label>Buscar e-mails dos últimos X dias
-            <input type="number" min="1" max="3650" data-path="gmail.newerThanDays">
-          </label>
-          <label>Etiqueta de processado
-            <input data-path="agent.processedLabel">
-          </label>
-          <label>Busca extra avançada, opcional
-            <input data-path="agent.gmailQuery" placeholder="exemplo: from:cliente@empresa.com OR subject:boleto">
-          </label>
-        </div>
-        <h3>Caixas/categorias do Gmail</h3>
-        <div id="gmailCategorySwitches" class="switch-grid compact"></div>
-        <h3>Filtros de leitura</h3>
-        <div id="gmailSwitches" class="switch-grid compact"></div>
-        <h3>Escopo para marcar como lido quando fizer sentido</h3>
-        <p class="hint">A chave “Marcar lido” só age nas categorias selecionadas abaixo. Assim ela não sai marcando todos os e-mails.</p>
-        <div id="markReadCategoryGrid" class="choice-grid compact"></div>
-        <h3>Horários permitidos</h3>
-        <p class="hint">Clique nas horas em que ele pode ser ativado. Se todas estiverem ligadas, ele pode rodar em qualquer hora respeitando o intervalo.</p>
-        <div class="hero-actions actions">
-          <button data-hours-preset="all">Todas as horas</button>
-          <button data-hours-preset="business">Horário comercial</button>
-          <button data-hours-preset="quiet">Manhã e noite</button>
-        </div>
-        <div id="hourGrid" class="hour-grid"></div>
-        <div class="form-grid">
-          <label>Rodar de quantas em quantas horas
-            <input type="number" min="1" max="24" data-path="automation.intervalHours">
-          </label>
-        </div>
-        <div id="automationSwitches" class="switch-grid"></div>
-      </section>
+          <section class="view-panel" data-view-panel="settings" hidden>
+            <div class="settings-intro">
+              <div><span class="section-eyebrow">CONFIGURAÇÃO ÚNICA</span><h2>Defina o comportamento do agente</h2><p>Cada função aparece uma única vez. Ao ativar uma chave, todas as dependências necessárias são ajustadas automaticamente.</p></div>
+              <div class="config-score"><strong id="enabledActionsCount">0</strong><span>funções ativas</span></div>
+            </div>
 
-      <section class="card">
-        <h2>7. Newsletter / mailing</h2>
-        <label>Arquivar após X dias
-          <input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays">
-        </label>
-        <label>Apagar após X dias, 0 desliga
-          <input type="number" min="0" max="3650" data-path="newsletter.deleteAfterDays">
-        </label>
-        <label>Remetentes favoritos
-          <input data-path="newsletter.favoriteSenders" data-kind="csv" placeholder="email@exemplo.com">
-        </label>
-        <label>Remetentes confiáveis
-          <input data-path="newsletter.trustedSenders" data-kind="csv">
-        </label>
-        <label>Remetentes bloqueados
-          <input data-path="newsletter.blockedSenders" data-kind="csv">
-        </label>
-        <div id="newsletterSwitches" class="switch-grid"></div>
-      </section>
+            <section class="settings-section" id="controlSection">
+              <div class="section-number">01</div>
+              <div class="section-content">
+                <div class="section-heading compact"><div><h2>Controle do agente</h2><p>Escolha quanto o agente pode decidir sozinho.</p></div></div>
+                <div class="autonomy-grid" id="autonomyGrid"></div>
+                <div class="inline-option" id="simulationOption"></div>
+              </div>
+            </section>
 
-      <section class="card">
-        <h2>8. Apple Calendar e Reminders</h2>
-        <label>Lista de lembretes
-          <input data-path="apple.reminders.listName">
-        </label>
-        <label>Calendário padrão
-          <input data-path="apple.calendar.defaultCalendarName">
-        </label>
-        <label>Alerta do calendário, minutos
-          <input type="number" min="0" max="1440" data-path="apple.calendar.defaultAlertMinutes">
-        </label>
-        <div id="appleSwitches" class="switch-grid"></div>
-      </section>
+            <section class="settings-section" id="actionsSection">
+              <div class="section-number">02</div>
+              <div class="section-content">
+                <div class="section-heading compact"><div><h2>O que o agente faz</h2><p>Ative as funções que deseja usar no Gmail.</p></div></div>
+                <h3 class="group-title">Organização da caixa de entrada</h3>
+                <div class="feature-grid" id="essentialActions"></div>
+                <h3 class="group-title">Produtividade</h3>
+                <div class="feature-grid" id="productivityActions"></div>
+                <details class="advanced-panel">
+                  <summary>Mais ações disponíveis <span>+</span></summary>
+                  <div class="feature-grid" id="advancedActions"></div>
+                </details>
+              </div>
+            </section>
 
-      <section class="card">
-        <h2>9. Siri / Atalhos</h2>
-        <p class="hint">A configuração online liga/desliga o módulo. Os endpoints reais aparecem no painel local quando o servidor está rodando.</p>
-        <div id="siriSwitches" class="switch-grid"></div>
-      </section>
+            <div class="settings-columns">
+              <section class="settings-section compact-card" id="inboxSection">
+                <div class="section-number">03</div>
+                <div class="section-content">
+                  <div class="section-heading compact"><div><h2>Caixa de entrada</h2><p>Escolha o alcance de cada execução.</p></div></div>
+                  <div class="field-grid two-columns">
+                    <label class="field"><span>E-mails por execução</span><input type="number" min="1" max="1000" data-path="agent.maxEmailsPerRun"></label>
+                    <label class="field"><span>Período analisado</span><div class="input-suffix"><input type="number" min="1" max="3650" data-path="gmail.newerThanDays"><span>dias</span></div></label>
+                  </div>
+                  <span class="field-label">Caixas do Gmail</span>
+                  <div class="chip-grid" id="gmailCategories"></div>
+                  <div class="feature-grid compact" id="gmailFilters"></div>
+                  <details class="advanced-panel slim">
+                    <summary>Busca avançada <span>+</span></summary>
+                    <div class="field-stack">
+                      <label class="field"><span>Consulta personalizada do Gmail</span><input data-path="agent.gmailQuery" placeholder="Ex.: from:cliente@empresa.com"></label>
+                      <label class="field"><span>Etiqueta de processado</span><input data-path="agent.processedLabel"></label>
+                    </div>
+                  </details>
+                </div>
+              </section>
 
-      <section class="card danger wide">
-        <h2>10. Remetentes de cuidado</h2>
-        <p class="hint">Use para bancos, governo, saúde, jurídico, família e contatos que você quer tratar com mais cuidado.</p>
-        <div class="form-grid">
-          <label>E-mails protegidos
-            <input data-path="protectedSenders.emails" data-kind="csv" placeholder="pessoa@empresa.com">
-          </label>
-          <label>Domínios protegidos
-            <input data-path="protectedSenders.domains" data-kind="csv" placeholder="empresa.com, gov.br">
-          </label>
-          <label>Palavras protegidas
-            <input data-path="protectedSenders.keywords" data-kind="csv" placeholder="banco, jurídico, saúde">
-          </label>
-        </div>
-        <p class="hint">As antigas chaves duplicadas de confirmação foram removidas do painel. Agora quem manda é o nível de autonomia e as ações ligadas.</p>
-      </section>
+              <section class="settings-section compact-card" id="importantSection">
+                <div class="section-number">04</div>
+                <div class="section-content">
+                  <div class="section-heading compact"><div><h2>E-mails importantes</h2><p>Defina o que deve ficar em destaque.</p></div></div>
+                  <div id="importantMainSwitch"></div>
+                  <label class="field"><span>Depois de marcar como importante</span><select data-path="important.afterMarkAction"><option value="keep">Manter na caixa de entrada</option><option value="archive">Arquivar</option><option value="delete">Mover para lixeira</option></select></label>
+                  <div id="importantOptions" class="feature-grid compact"></div>
+                  <span class="field-label">Prioridades</span>
+                  <div class="chip-grid" id="importantPriorityGrid"></div>
+                  <span class="field-label">Categorias</span>
+                  <div class="chip-grid" id="importantCategoryGrid"></div>
+                </div>
+              </section>
+            </div>
 
-      <section class="card wide">
-        <h2>11. Resultado para colar no GitHub</h2>
-        <p>Cole este conteúdo em <strong>Settings → Secrets and variables → Actions → AGENT_SETTINGS_JSON</strong>.</p>
-        <textarea id="jsonOutput" spellcheck="false"></textarea>
-      </section>
-    </main>
+            <section class="settings-section" id="automationSection">
+              <div class="section-number">05</div>
+              <div class="section-content">
+                <div class="section-heading compact"><div><h2>Automação</h2><p>Escolha o intervalo e as horas em que o agente pode trabalhar.</p></div><div id="automationMainSwitch"></div></div>
+                <div class="automation-toolbar">
+                  <label class="field interval-field"><span>Executar a cada</span><select data-path="automation.intervalHours" id="intervalHours"></select></label>
+                  <div class="preset-buttons"><button data-hours-preset="all">Dia inteiro</button><button data-hours-preset="business">Horário comercial</button><button data-hours-preset="quiet">Manhã e noite</button></div>
+                  <div id="automationOptions" class="feature-grid compact"></div>
+                </div>
+                <div class="hour-grid" id="hourGrid"></div>
+              </div>
+            </section>
 
-    <footer>
-      <p>Esta página não salva nem pede suas chaves. Credenciais ficam somente nos Secrets do GitHub.</p>
-    </footer>
+            <div class="settings-columns">
+              <section class="settings-section compact-card" id="newsletterSection">
+                <div class="section-number">06</div>
+                <div class="section-content">
+                  <div class="section-heading compact"><div><h2>Newsletters</h2><p>Controle promoções e e-mails recorrentes.</p></div></div>
+                  <div id="newsletterMainSwitch"></div>
+                  <div class="field-grid two-columns">
+                    <label class="field"><span>Arquivar depois de</span><div class="input-suffix"><input type="number" min="1" max="365" data-path="newsletter.archiveAfterDays"><span>dias</span></div></label>
+                    <label class="field"><span>Apagar depois de</span><div class="input-suffix"><input type="number" min="0" max="3650" data-path="newsletter.deleteAfterDays"><span>dias</span></div></label>
+                  </div>
+                  <div id="newsletterOptions" class="feature-grid compact"></div>
+                  <label class="field"><span>Remetentes favoritos</span><input data-path="newsletter.favoriteSenders" data-kind="csv" placeholder="email@exemplo.com"></label>
+                </div>
+              </section>
 
+              <section class="settings-section compact-card" id="aiSection">
+                <div class="section-number">07</div>
+                <div class="section-content">
+                  <div class="section-heading compact"><div><h2>Inteligência artificial</h2><p>Escolha o motor que analisa seus e-mails.</p></div></div>
+                  <label class="field"><span>Provedor</span><select data-path="ai.provider"><option value="openai">OpenAI</option><option value="gemini">Gemini</option><option value="fallback">OpenAI + Gemini</option></select></label>
+                  <div class="field-grid two-columns">
+                    <label class="field"><span>Modelo OpenAI</span><input data-path="ai.openai.model"></label>
+                    <label class="field"><span>Modelo Gemini</span><input data-path="ai.gemini.model"></label>
+                  </div>
+                  <div id="aiOptions" class="feature-grid compact"></div>
+                </div>
+              </section>
+            </div>
+
+            <section class="settings-section" id="integrationsSection">
+              <div class="section-number">08</div>
+              <div class="section-content">
+                <div class="section-heading compact"><div><h2>Apple e integrações</h2><p>Conecte lembretes, calendário e comandos pelo iPhone.</p></div></div>
+                <div id="integrationOptions" class="feature-grid"></div>
+                <div class="field-grid three-columns integration-fields">
+                  <label class="field"><span>Lista de lembretes</span><input data-path="apple.reminders.listName"></label>
+                  <label class="field"><span>Calendário padrão</span><input data-path="apple.calendar.defaultCalendarName"></label>
+                  <label class="field"><span>Alerta do evento</span><div class="input-suffix"><input type="number" min="0" max="1440" data-path="apple.calendar.defaultAlertMinutes"><span>min</span></div></label>
+                </div>
+              </div>
+            </section>
+
+            <section class="copy-banner">
+              <div><span class="section-eyebrow">PRONTO PARA O GITHUB</span><h2>Sua configuração está preparada.</h2><p>Copie e cole no Secret <strong>AGENT_SETTINGS_JSON</strong>.</p></div>
+              <button class="button primary large" id="copySettingsBottom">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                Copiar configuração
+              </button>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-icon">✓</span><span id="toastMessage">Concluído</span></div>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <script src="./app.js"></script>
   </body>
 </html>

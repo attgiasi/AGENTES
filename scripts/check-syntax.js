@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const roots = ['src', 'scripts', 'test'];
+const roots = ['src', 'scripts', 'test', 'public', 'pages'];
 const files = roots.flatMap((root) => listJs(root)).filter((file) => !file.includes('node_modules'));
 let failed = false;
 
@@ -27,4 +27,3 @@ function listJs(dir) {
   }
   return output;
 }
-

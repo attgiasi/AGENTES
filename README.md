@@ -6,16 +6,17 @@ Este README está organizado na ordem certa de execução para Windows usando Po
 
 ## O que o agente mostra e controla
 
-O painel local tem tudo em uma página:
+O painel foi organizado como um produto final:
 
-- dashboard geral com arquivados, apagados, descadastros, sugestões, etiquetas, rascunhos, lembretes, eventos, newsletters e falhas;
-- configurações em grids alinhados;
-- cartões de autonomia diretos;
+- visão geral com arquivados, marcados como lidos, importantes, etiquetas, lixeira e descadastros;
+- página de configuração premium, compacta e responsiva;
+- uma única chave para cada função, sem controles duplicados;
+- cartões diretos para os cinco níveis de autonomia;
 - seleção visual das 24 horas do dia;
-- seleção das caixas Principal, Promoções, Social, Atualizações e Fórum;
-- escopo próprio para “Marcar como lido”, por categoria;
+- seleção das caixas Principal, Promoções, Social, Atualizações e Fóruns;
 - limite de até 1000 e-mails por execução;
-- permissões por chave liga/desliga, sem frase de segurança obrigatória.
+- botão `Copiar configuração`, sem botão de download;
+- a interface local e a hospedada no GitHub Pages usam os mesmos arquivos.
 
 Use sempre `npm.cmd`, não `npm`, para evitar este erro:
 
@@ -560,17 +561,16 @@ Depois, com calma:
 - criar eventos;
 - sugerir descadastro.
 
-Para arquivar automaticamente de verdade, confirme três coisas no painel:
+Para arquivar automaticamente, faça somente isto no novo painel:
 
-1. `Simulação` precisa ficar `Desligado`.
-2. `Nível de autonomia` precisa permitir execução automática.
-3. `Executar tudo na hora` precisa ficar `Ligado`.
-4. `Arquivar e-mails` precisa ficar `Ligado`.
-5. Para arquivar todos os e-mails encontrados, `Arquivar tudo imediatamente` também precisa ficar `Ligado`.
+1. Abra `Configurações`.
+2. Escolha `Autonomia total` se quiser executar sem aprovação.
+3. Deixe `Modo simulação` desligado.
+4. Ligue a chave única `Arquivar e-mails`.
 
-Atalho fácil: no configurador online existe o botão `Autonomia total + arquivar tudo`. Ele liga as chaves certas para arquivar tudo que for processado.
+Essa chave configura internamente o arquivamento e o arquivamento imediato. Você não precisa mais procurar duas opções diferentes.
 
-Importante: a partir desta versão, se `Arquivar tudo imediatamente` estiver ligado, o código também liga `Arquivar e-mails` automaticamente. Isso evita configuração quebrada.
+O mesmo vale para `Marcar como lido`: uma única chave ativa tudo o que essa ação precisa para funcionar na mesma execução.
 
 Para ver um resumo seguro da configuração, sem mostrar chave, token ou credencial, rode:
 
@@ -810,15 +810,15 @@ Também existe uma página estática para montar/copiar o `AGENT_SETTINGS_JSON` 
 https://attgiasi.github.io/AGENTES/
 ```
 
-Essa página usa a mesma organização visual do painel local para configurar botões e copiar o JSON para o GitHub Secret.
+Essa página usa exatamente os mesmos arquivos HTML, CSS e JavaScript do painel local. O visual e os controles são iguais nos dois lugares.
 Se o navegador não redirecionar sozinho, abra diretamente `https://attgiasi.github.io/AGENTES/pages/`.
 
-Ela não conecta Gmail, não acessa OpenAI, não salva token e não executa o agente. Ela apenas ajuda a montar a configuração.
+No GitHub Pages, os ajustes ficam salvos no próprio navegador para você continuar depois. A página monta a configuração, mas a execução do agente acontece pelo GitHub Actions.
 
 A diferença é simples:
 
-- painel local: configura, mostra status real, roda o agente, mostra logs e dashboard real;
-- página online: configura e copia o JSON para você colar no GitHub.
+- painel local: mostra dados reais do agente, permite rodar na hora e salva no banco local;
+- página online: mantém o mesmo painel e permite copiar a configuração para o GitHub.
 
 ## Como configurar online, direto pelo GitHub
 
@@ -828,17 +828,18 @@ A diferença é simples:
 https://attgiasi.github.io/AGENTES/
 ```
 
-2. Ajuste os cartões e chaves da página.
-3. Em `Nível de autonomia`, escolha até onde o agente pode ir.
-4. Em `Gmail e execução`, escolha as caixas que entram na leitura.
-5. Em `Escopo para marcar como lido`, escolha quais categorias podem ser marcadas como lidas.
-6. Clique em `Copiar JSON`.
-7. No GitHub, abra o repositório `AGENTES`.
-8. Vá em `Settings`.
-9. Vá em `Secrets and variables`.
-10. Clique em `Actions`.
-11. Abra ou crie o Secret `AGENT_SETTINGS_JSON`.
-12. Cole o JSON copiado e salve.
+2. Clique em `Configurações` no menu lateral.
+3. Em `Controle do agente`, escolha a autonomia.
+4. Em `O que o agente faz`, ligue somente as funções desejadas.
+5. Em `Caixa de entrada`, escolha as caixas do Gmail.
+6. Ajuste e-mails importantes, automação, newsletters, IA e integrações.
+7. Clique em `Copiar configuração`.
+8. No GitHub, abra o repositório `AGENTES`.
+9. Vá em `Settings`.
+10. Vá em `Secrets and variables`.
+11. Clique em `Actions`.
+12. Abra ou crie o Secret `AGENT_SETTINGS_JSON`.
+13. Cole a configuração copiada e salve.
 
 Pronto: na próxima execução do GitHub Actions, o agente vai usar essa configuração.
 
@@ -932,9 +933,9 @@ Comandos disponíveis:
 
 | Risco | Exemplos | Como controlar |
 |---|---|---|
-| Baixo | ler, resumir, classificar, aplicar etiqueta, marcar importante, criar lembrete, relatório | menu `Ações de baixo risco` |
-| Médio | arquivar, arquivar tudo imediatamente, criar rascunho, criar evento | menu `Ações de médio risco` |
-| Alto | enviar, apagar, descadastrar newsletter, encaminhar, esvaziar lixeira, ações em lote | menu `Ações de alto risco` |
+| Baixo | ler, resumir, classificar, aplicar etiqueta, marcar importante, criar lembrete, relatório | `O que o agente faz` |
+| Médio | arquivar, criar rascunho, criar evento | `O que o agente faz` e `Produtividade` |
+| Alto | enviar, apagar, descadastrar newsletter, encaminhar, esvaziar lixeira, ações em lote | `Mais ações disponíveis` |
 
 ## Como o agente decide o que fazer
 
@@ -982,25 +983,23 @@ Por padrão, os importantes ficam não lidos e protegidos contra o arquivamento 
 | Nível | O que faz |
 |---|---|
 | 0 | Desligado |
-| 1 | Baixo controle: pede aprovação para todas as ações |
-| 2 | Médio controle: executa baixo risco; médio e alto pedem aprovação |
-| 3 | Alto controle: executa baixo e médio risco; alto pede aprovação |
+| 1 | Assistido: toda ação aguarda sua aprovação |
+| 2 | Equilibrado: executa tarefas simples automaticamente |
+| 3 | Independente: só pede aprovação para ações avançadas |
 | 4 | Autonomia total: executa toda ação ligada, sem aprovação |
-
-Não há frase de segurança obrigatória. Se você ligar uma ação e escolher autonomia total, o agente executa.
 
 Para arquivar todos os e-mails encontrados imediatamente, use:
 
-- `Simulação`: desligado;
-- `Autonomia`: `Autonomia total`;
-- `Ações de baixo risco → Ler e-mails`: ligado;
-- `Ações de médio risco → Arquivar e-mails`: ligado;
-- `Ações de médio risco → Arquivar tudo imediatamente`: ligado;
-- `Ações de alto risco → Apagar e-mails`: desligado, se você só quer arquivar.
+- `Modo simulação`: desligado;
+- `Controle do agente`: `Autonomia total`;
+- `O que o agente faz → Ler e-mails`: ligado;
+- `O que o agente faz → Arquivar e-mails`: ligado.
+
+A chave `Arquivar e-mails` já ativa internamente o arquivamento imediato. Não existe mais uma segunda chave duplicada no painel.
 
 ## Horários de execução
 
-No painel existe a área `Gmail e execução`.
+No painel existem as áreas `Caixa de entrada` e `Automação`.
 
 Você pode definir:
 
